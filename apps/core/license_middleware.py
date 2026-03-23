@@ -62,9 +62,11 @@ class LicenseMiddleware:
         if any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS):
             return self.get_response(request)
 
-        # Skip jika user belum login (biarkan auth middleware handle)
-        if not hasattr(request, 'user') or not request.user.is_authenticated:
-            return self.get_response(request)
+        # ============================================================
+        # PENGECEKAN LISENSI HARUS TERJADI SEBELUM LOGIN!
+        # Pembeli baru yang pertama kali akses aplikasi WAJIB melihat
+        # halaman aktivasi lisensi terlebih dahulu, BUKAN halaman login.
+        # ============================================================
 
         # Import model di sini (lazy import untuk menghindari circular import)
         from apps.core.license_models import LicenseConfig, generate_hardware_id
@@ -76,12 +78,18 @@ class LicenseMiddleware:
             return self.get_response(request)
 
         # Jika belum ada license key → redirect ke halaman aktivasi
+        # Ini berlaku untuk SEMUA pengunjung (login maupun belum login)
         if not config.license_key or not config.is_activated:
             return HttpResponseRedirect(reverse('license_activation'))
 
         # Cek cache validasi (24 jam)
         if config.is_cache_valid() and config.validation_cache:
             # Cache masih valid dan lisensi valid → lanjut
+            return self.get_response(request)
+
+        # Untuk pengecekan berkala ke CLS, hanya dilakukan jika user sudah login
+        # (user yang belum login akan ditangani oleh auth middleware setelah ini)
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
             return self.get_response(request)
 
         # Cache expired atau belum ada → ping CLS untuk validasi ulang
