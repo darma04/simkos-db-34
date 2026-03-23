@@ -40,7 +40,7 @@ class PengaturanPerusahaan(models.Model):
     website = models.URLField(blank=True, null=True, verbose_name="Website")
     
     # System Settings / Meta Configuration
-    system_title = models.CharField(max_length=200, default='SINTSGROUP KOS System', verbose_name="Judul Sistem")
+    system_title = models.CharField(max_length=200, default='SERPGROUP KOS System', verbose_name="Judul Sistem")
     system_description = models.TextField(
         blank=True, 
         null=True, 
@@ -147,7 +147,7 @@ class PengaturanPerusahaan(models.Model):
         """Memuat pengaturan perusahaan (buat baru jika belum ada)"""
         obj, created = cls.objects.get_or_create(
             pk=1,
-            defaults={'nama_perusahaan': 'SINTSGROUP'}
+            defaults={'nama_perusahaan': 'SERPGROUP'}
         )
         return obj
 
