@@ -15,7 +15,18 @@
   <head>
     <title>{% block title %}{% endblock title %} | {{ system_title|default:"SIMKOS" }}</title>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+    <!-- Capacitor Mobile App: Sembunyikan Status Bar (Fullscreen) -->
+    <script>
+      // Saat berjalan sebagai aplikasi mobile (Capacitor),
+      // sembunyikan status bar agar tampilan fullscreen dan tidak tumpang tindih.
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar) {
+          // Sembunyikan status bar sepenuhnya (fullscreen mode)
+          window.Capacitor.Plugins.StatusBar.hide();
+        }
+      });
+    </script>
     <!-- Meta Deskripsi SEO (Dinamis dari Pengaturan Meta Sistem) -->
     <meta name="description" content="{% if system_description %}{{ system_description }}{% else %}{% get_theme_variables 'template_description' %}{% endif %}" />
     <!-- Meta Keywords SEO (Dinamis dari Pengaturan Meta Sistem) -->

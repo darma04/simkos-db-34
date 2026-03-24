@@ -82,10 +82,17 @@ class LicenseMiddleware:
         if not config.license_key or not config.is_activated:
             return HttpResponseRedirect(reverse('license_activation'))
 
-        # Cek cache validasi (24 jam)
-        if config.is_cache_valid() and config.validation_cache:
-            # Cache masih valid dan lisensi valid → lanjut
-            return self.get_response(request)
+        # Cek cache validasi
+        if config.is_cache_valid():
+            if config.validation_cache:
+                # Cache masih valid DAN lisensi valid → lanjut
+                return self.get_response(request)
+            else:
+                # Cache masih valid TAPI lisensi INVALID (CLS bilang invalid)
+                # → langsung redirect ke halaman aktivasi
+                return HttpResponseRedirect(
+                    reverse('license_activation') + '?error=invalid'
+                )
 
         # Untuk pengecekan berkala ke CLS, hanya dilakukan jika user sudah login
         # (user yang belum login akan ditangani oleh auth middleware setelah ini)
@@ -102,9 +109,10 @@ class LicenseMiddleware:
         if is_valid:
             return self.get_response(request)
 
-        # Jika validasi gagal TAPI cache lama masih ada (offline tolerance)
+        # Jika validasi gagal TAPI CLS tidak bisa dihubungi (offline tolerance)
+        # Hanya toleransi jika cache LAMA masih mengatakan valid
         if config.validation_cache and config.last_validated:
-            logger.warning("CLS tidak bisa dihubungi, menggunakan cache lama.")
+            logger.warning("CLS tidak bisa dihubungi, menggunakan cache lama (masih valid).")
             return self.get_response(request)
 
         # Benar-benar invalid → redirect ke halaman aktivasi dengan pesan error
