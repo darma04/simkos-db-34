@@ -13,14 +13,6 @@
 <html lang="en" class="{{style}}-style {{navbar_type_class}} {{header_type_class}} {{menu_fixed_class}} {{menu_collapsed_class}} {{footer_fixed_class}} {{display_customizer_class}} {{content_layout_class}}" dir="{{text_direction_value}}" data-theme="{{theme}}" data-assets-path="{% static '/' %}" data-base-url="{{url}}" data-framework="django" data-template="{{ menu_horizontal|yesno:'horizontal,vertical' }}-menu-{{ is_front|yesno:'front,' }}-{{ theme }}-{{style}}">
 
   <head>
-    <!-- Deteksi WebView AWAL — sebelum CSS dirender -->
-    <script>
-    (function(){
-      var ua = navigator.userAgent || '';
-      var isWV = !!window.Capacitor || /wv|WebView/i.test(ua) || (/Android/i.test(ua) && /Version\/[\d.]+/i.test(ua) && !/Chrome\/[\d.]+/i.test(ua));
-      if (isWV || /median/i.test(ua)) document.documentElement.classList.add('is-webview');
-    })();
-    </script>
     <title>{% block title %}{% endblock title %} | {{ system_title|default:"SIMKOS" }}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
@@ -44,37 +36,30 @@
 
     <!--Page CSS-->
     {% block page_css %}{% endblock page_css %}
-    <!-- MOBILE NAVBAR FIX — Padding untuk Capacitor/Median WebView -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MOBILE NAVBAR FIX — Padding Seimbang untuk Capacitor WebView
+         ═══════════════════════════════════════════════════════════════════ -->
     <style>
-      /* === WEBVIEW MODE === */
-      html.is-webview .layout-navbar,
-      html.is-webview nav.layout-navbar,
-      html.is-webview #layout-navbar {
-        padding-top: 36px !important;
-        padding-bottom: 10px !important;
-      }
-      html.is-webview .layout-navbar .container-xxl,
-      html.is-webview .layout-navbar .container-fluid {
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-      }
-      html.is-webview .layout-menu {
-        padding-top: 36px !important;
-      }
-      @supports (padding-top: env(safe-area-inset-top)) {
-        html.is-webview .layout-navbar {
-          padding-top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
-        }
-        html.is-webview .layout-menu {
-          padding-top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
-        }
-      }
-      /* === BROWSER MODE === */
       @media (max-width: 1199.98px) {
-        html:not(.is-webview) .layout-navbar,
-        html:not(.is-webview) nav.layout-navbar {
+        .layout-navbar #layout-navbar,
+        .layout-navbar.navbar,
+        nav.layout-navbar,
+        #layout-navbar {
           padding-top: 10px !important;
           padding-bottom: 10px !important;
+        }
+        .layout-navbar .container-xxl,
+        .layout-navbar .container-fluid {
+          padding-top: 4px !important;
+          padding-bottom: 4px !important;
+        }
+      }
+      @supports (padding-top: env(safe-area-inset-top)) {
+        .layout-navbar {
+          padding-top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+        }
+        .layout-menu {
+          padding-top: env(safe-area-inset-top, 0px) !important;
         }
       }
     </style>
@@ -100,7 +85,10 @@
 
     <!--Page Javascript-->
     {% block page_js %} {% endblock page_js %}
-    <!-- EXPORT UTILS — INLINE v3 (Tanpa Popup) -->
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EXPORT UTILS — INLINE (Tidak bergantung pada file external)
+         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
@@ -109,7 +97,6 @@
         var ua = navigator.userAgent || '';
         if (window.Capacitor) return true;
         if (/wv|WebView/i.test(ua)) return true;
-        if (/median/i.test(ua)) return true;
         if (/Android.*Version\/[\d.]+/i.test(ua) && !/Chrome\/[\d.]+/i.test(ua)) return true;
         if (/iPhone|iPad|iPod/i.test(ua) && !/Safari/i.test(ua)) return true;
         return false;
@@ -123,21 +110,22 @@
         }
       }
 
-      // TANPA POPUP — langsung konversi ke data URI -> download
       function _downloadBlobWebView(blob, filename) {
-        console.log('[ExportUtils] WebView download: ' + filename);
-        var reader = new FileReader();
-        reader.onloadend = function() {
-          var a = document.createElement('a');
-          a.href = reader.result;
-          a.download = filename;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function() { if (a.parentNode) document.body.removeChild(a); }, 2000);
-        };
-        reader.onerror = function() { _downloadBlobBrowser(blob, filename); };
-        reader.readAsDataURL(blob);
+        if (navigator.share && navigator.canShare) {
+          try {
+            var file = new File([blob], filename, { type: blob.type });
+            var shareData = { files: [file], title: filename };
+            if (navigator.canShare(shareData)) {
+              navigator.share(shareData)
+                .then(function() { console.log('[ExportUtils] Shared via native'); })
+                .catch(function(err) {
+                  if (err.name !== 'AbortError') { _showOverlay(blob, filename); }
+                });
+              return;
+            }
+          } catch (e) { console.warn('[ExportUtils] Share error:', e); }
+        }
+        _showOverlay(blob, filename);
       }
 
       function _downloadBlobBrowser(blob, filename) {
@@ -146,8 +134,30 @@
           var a = document.createElement('a');
           a.href = url; a.download = filename; a.style.display = 'none';
           document.body.appendChild(a); a.click();
-          setTimeout(function() { if (a.parentNode) document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
-        } catch (e) { console.error('[ExportUtils] Browser download gagal:', e); }
+          setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+        } catch (e) { _showOverlay(blob, filename); }
+      }
+
+      function _showOverlay(blob, filename) {
+        var blobUrl = URL.createObjectURL(blob);
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML =
+          '<div style="background:#fff;border-radius:16px;padding:28px 24px;text-align:center;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="width:60px;height:60px;margin:0 auto 16px;background:linear-gradient(135deg,#e8e8ff,#d0d0ff);border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#696cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            '</div>' +
+            '<h5 style="margin:0 0 8px;color:#333;font-size:1.1rem;font-weight:700;">File Siap Diunduh</h5>' +
+            '<p style="color:#697a8d;font-size:0.85rem;margin-bottom:20px;line-height:1.4;">Ketuk tombol di bawah untuk menyimpan file <strong>' + filename + '</strong></p>' +
+            '<a id="_dl_link" href="' + blobUrl + '" download="' + filename + '" style="display:block;background:linear-gradient(135deg,#696cff,#5f61e6);color:#fff;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.95rem;margin-bottom:12px;">\uD83D\uDCE5 Download ' + filename + '</a>' +
+            '<button id="_dl_close" style="background:none;border:none;color:#697a8d;cursor:pointer;font-size:0.8rem;padding:8px 16px;">Tutup</button>' +
+          '</div>';
+        overlay.querySelector('#_dl_close').addEventListener('click', function() { overlay.remove(); URL.revokeObjectURL(blobUrl); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); URL.revokeObjectURL(blobUrl); } });
+        overlay.querySelector('#_dl_link').addEventListener('click', function() {
+          setTimeout(function() { overlay.remove(); setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000); }, 1000);
+        });
+        document.body.appendChild(overlay);
       }
 
       function exportTableToExcel(tableId, filename) {
@@ -180,7 +190,9 @@
           var BOM = '\uFEFF';
           var blob = new Blob([BOM + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
           _downloadBlob(blob, filename + '.csv');
-        } catch (error) { alert('Export Excel error: ' + error.message); }
+        } catch (error) {
+          alert('Terjadi kesalahan saat export Excel: ' + error.message);
+        }
       }
 
       function exportTableToPDF(tableId, filename, title, orientation) {
@@ -231,7 +243,7 @@
           } else {
             pdfDoc.download(filename + '.pdf');
           }
-        } catch (error) { alert('Export PDF error: ' + error.message); }
+        } catch (error) { alert('Terjadi kesalahan saat export PDF: ' + error.message); }
       }
 
       // Global Download Interceptor
@@ -244,10 +256,18 @@
             var fname = dl || 'download';
             if (href.indexOf('blob:') === 0) {
               fetch(href).then(function(r){return r.blob();})
-                .then(function(b){ _downloadBlobWebView(b, fname); })
+                .then(function(b){ _downloadBlob(b, fname); })
                 .catch(function(e){ _origClick.call(this); }.bind(this));
             } else {
-              _origClick.call(this);
+              try {
+                var parts = href.split(','); var meta = parts[0]; var raw = parts[1];
+                var mm = meta.match(/data:([^;]+)/);
+                var mime = mm ? mm[1] : 'application/octet-stream';
+                var bs = meta.indexOf('base64') !== -1 ? atob(raw) : decodeURIComponent(raw);
+                var ab = new ArrayBuffer(bs.length); var ia = new Uint8Array(ab);
+                for (var i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i);
+                _downloadBlob(new Blob([ab], {type: mime}), fname);
+              } catch(e) { _origClick.call(this); }
             }
             return;
           }
@@ -257,9 +277,9 @@
 
       window._downloadBlob = _downloadBlob;
       window._isWebView = _isWebView;
+      window._showManualDownloadLink = _showOverlay;
       window.exportTableToExcel = exportTableToExcel;
       window.exportTableToPDF = exportTableToPDF;
-      console.log('[ExportUtils] Inline v3 loaded. WebView=' + _isWebView());
     })();
     </script>
 
