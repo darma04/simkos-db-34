@@ -36,18 +36,27 @@
 
     <!--Page CSS-->
     {% block page_css %}{% endblock page_css %}
-    <!-- Safe Area & Mobile Navbar CSS -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MOBILE NAVBAR FIX — Padding Seimbang untuk Capacitor WebView
+         ═══════════════════════════════════════════════════════════════════ -->
     <style>
-      /*
-       * Capacitor Mobile App CSS Adjustments
-       * overlaysWebView=false di capacitor.config.json sudah membuat
-       * WebView dimulai di bawah status bar, jadi tidak perlu padding-top lagi.
-       * CSS ini hanya menyeimbangkan padding navbar & kompensasi safe-area
-       * sebagai fallback jika overlaysWebView gagal di device tertentu.
-       */
+      @media (max-width: 1199.98px) {
+        .layout-navbar #layout-navbar,
+        .layout-navbar.navbar,
+        nav.layout-navbar,
+        #layout-navbar {
+          padding-top: 10px !important;
+          padding-bottom: 10px !important;
+        }
+        .layout-navbar .container-xxl,
+        .layout-navbar .container-fluid {
+          padding-top: 4px !important;
+          padding-bottom: 4px !important;
+        }
+      }
       @supports (padding-top: env(safe-area-inset-top)) {
         .layout-navbar {
-          padding-top: env(safe-area-inset-top, 0px) !important;
+          padding-top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
         }
         .layout-menu {
           padding-top: env(safe-area-inset-top, 0px) !important;
@@ -77,8 +86,202 @@
     <!--Page Javascript-->
     {% block page_js %} {% endblock page_js %}
 
-    <!-- Export Utils — Helper download file untuk Capacitor WebView -->
-    <script src="{% static 'js/export_utils.js' %}"></script>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         EXPORT UTILS — INLINE (Tidak bergantung pada file external)
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <script>
+    (function(){
+      'use strict';
+
+      function _isWebView() {
+        var ua = navigator.userAgent || '';
+        if (window.Capacitor) return true;
+        if (/wv|WebView/i.test(ua)) return true;
+        if (/Android.*Version\/[\d.]+/i.test(ua) && !/Chrome\/[\d.]+/i.test(ua)) return true;
+        if (/iPhone|iPad|iPod/i.test(ua) && !/Safari/i.test(ua)) return true;
+        return false;
+      }
+
+      function _downloadBlob(blob, filename) {
+        if (_isWebView()) {
+          _downloadBlobWebView(blob, filename);
+        } else {
+          _downloadBlobBrowser(blob, filename);
+        }
+      }
+
+      function _downloadBlobWebView(blob, filename) {
+        if (navigator.share && navigator.canShare) {
+          try {
+            var file = new File([blob], filename, { type: blob.type });
+            var shareData = { files: [file], title: filename };
+            if (navigator.canShare(shareData)) {
+              navigator.share(shareData)
+                .then(function() { console.log('[ExportUtils] Shared via native'); })
+                .catch(function(err) {
+                  if (err.name !== 'AbortError') { _showOverlay(blob, filename); }
+                });
+              return;
+            }
+          } catch (e) { console.warn('[ExportUtils] Share error:', e); }
+        }
+        _showOverlay(blob, filename);
+      }
+
+      function _downloadBlobBrowser(blob, filename) {
+        try {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = filename; a.style.display = 'none';
+          document.body.appendChild(a); a.click();
+          setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+        } catch (e) { _showOverlay(blob, filename); }
+      }
+
+      function _showOverlay(blob, filename) {
+        var blobUrl = URL.createObjectURL(blob);
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        overlay.innerHTML =
+          '<div style="background:#fff;border-radius:16px;padding:28px 24px;text-align:center;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="width:60px;height:60px;margin:0 auto 16px;background:linear-gradient(135deg,#e8e8ff,#d0d0ff);border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#696cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            '</div>' +
+            '<h5 style="margin:0 0 8px;color:#333;font-size:1.1rem;font-weight:700;">File Siap Diunduh</h5>' +
+            '<p style="color:#697a8d;font-size:0.85rem;margin-bottom:20px;line-height:1.4;">Ketuk tombol di bawah untuk menyimpan file <strong>' + filename + '</strong></p>' +
+            '<a id="_dl_link" href="' + blobUrl + '" download="' + filename + '" style="display:block;background:linear-gradient(135deg,#696cff,#5f61e6);color:#fff;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:0.95rem;margin-bottom:12px;">\uD83D\uDCE5 Download ' + filename + '</a>' +
+            '<button id="_dl_close" style="background:none;border:none;color:#697a8d;cursor:pointer;font-size:0.8rem;padding:8px 16px;">Tutup</button>' +
+          '</div>';
+        overlay.querySelector('#_dl_close').addEventListener('click', function() { overlay.remove(); URL.revokeObjectURL(blobUrl); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.remove(); URL.revokeObjectURL(blobUrl); } });
+        overlay.querySelector('#_dl_link').addEventListener('click', function() {
+          setTimeout(function() { overlay.remove(); setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000); }, 1000);
+        });
+        document.body.appendChild(overlay);
+      }
+
+      function exportTableToExcel(tableId, filename) {
+        try {
+          var table = document.getElementById(tableId);
+          if (!table) { alert('Tabel tidak ditemukan!'); return; }
+          var csv = [];
+          var headerRow = table.querySelector('thead tr');
+          if (headerRow) {
+            var headers = [];
+            headerRow.querySelectorAll('th').forEach(function(th) {
+              headers.push('"' + th.textContent.trim().replace(/"/g, '""') + '"');
+            });
+            csv.push(headers.join(','));
+          }
+          var tbody = table.querySelector('tbody');
+          if (tbody) {
+            tbody.querySelectorAll('tr').forEach(function(tr) {
+              var cells = tr.querySelectorAll('td');
+              if (cells.length === 0) return;
+              if (cells.length === 1 && cells[0].colSpan > 1) return;
+              var row = [];
+              cells.forEach(function(td) {
+                var text = td.textContent.trim().replace(/\s+/g, ' ').replace(/"/g, '""');
+                row.push('"' + text + '"');
+              });
+              csv.push(row.join(','));
+            });
+          }
+          var BOM = '\uFEFF';
+          var blob = new Blob([BOM + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+          _downloadBlob(blob, filename + '.csv');
+        } catch (error) {
+          alert('Terjadi kesalahan saat export Excel: ' + error.message);
+        }
+      }
+
+      function exportTableToPDF(tableId, filename, title, orientation) {
+        orientation = orientation || 'landscape';
+        try {
+          if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia.'); return; }
+          var table = document.getElementById(tableId);
+          if (!table) { alert('Tabel tidak ditemukan!'); return; }
+          var headers = [];
+          var headerRow = table.querySelector('thead tr');
+          if (headerRow) {
+            headerRow.querySelectorAll('th').forEach(function(th) {
+              headers.push({text: th.textContent.trim(), style: 'tableHeader', fillColor: '#696CFF', color: '#FFFFFF', bold: true});
+            });
+          }
+          var body = [headers];
+          var tbody = table.querySelector('tbody');
+          if (tbody) {
+            tbody.querySelectorAll('tr').forEach(function(tr) {
+              var cells = tr.querySelectorAll('td');
+              if (cells.length === 0) return;
+              if (cells.length === 1 && cells[0].colSpan > 1) return;
+              var row = [];
+              cells.forEach(function(td) {
+                var text = td.textContent.trim().replace(/\s+/g, ' ');
+                if (text.length > 100) text = text.substring(0, 97) + '...';
+                row.push(text);
+              });
+              body.push(row);
+            });
+          }
+          var docDef = {
+            pageOrientation: orientation, pageMargins: [40,60,40,60],
+            content: [
+              {text: title, style: 'header', margin: [0,0,0,20]},
+              {table: {headerRows:1, widths: Array(headers.length).fill('auto'), body: body},
+               layout: {fillColor:function(r){return r===0?'#696CFF':(r%2===0?'#F5F5F9':null);},
+                hLineWidth:function(){return 0.5;},vLineWidth:function(){return 0.5;},
+                hLineColor:function(){return '#DBDADE';},vLineColor:function(){return '#DBDADE';}}},
+              {text:'Dicetak pada: '+new Date().toLocaleString('id-ID'),style:'footer',margin:[0,20,0,0]}
+            ],
+            styles: {header:{fontSize:18,bold:true,color:'#5F61E6'},tableHeader:{bold:true,fontSize:11,color:'#FFFFFF'},footer:{fontSize:9,italics:true,color:'#697A8D'}},
+            defaultStyle: {fontSize: 9}
+          };
+          var pdfDoc = pdfMake.createPdf(docDef);
+          if (_isWebView()) {
+            pdfDoc.getBlob(function(blob) { _downloadBlob(blob, filename + '.pdf'); });
+          } else {
+            pdfDoc.download(filename + '.pdf');
+          }
+        } catch (error) { alert('Terjadi kesalahan saat export PDF: ' + error.message); }
+      }
+
+      // Global Download Interceptor
+      if (_isWebView()) {
+        var _origClick = HTMLAnchorElement.prototype.click;
+        HTMLAnchorElement.prototype.click = function() {
+          var dl = this.getAttribute('download');
+          var href = this.href || '';
+          if (dl && (href.indexOf('blob:') === 0 || href.indexOf('data:') === 0)) {
+            var fname = dl || 'download';
+            if (href.indexOf('blob:') === 0) {
+              fetch(href).then(function(r){return r.blob();})
+                .then(function(b){ _downloadBlob(b, fname); })
+                .catch(function(e){ _origClick.call(this); }.bind(this));
+            } else {
+              try {
+                var parts = href.split(','); var meta = parts[0]; var raw = parts[1];
+                var mm = meta.match(/data:([^;]+)/);
+                var mime = mm ? mm[1] : 'application/octet-stream';
+                var bs = meta.indexOf('base64') !== -1 ? atob(raw) : decodeURIComponent(raw);
+                var ab = new ArrayBuffer(bs.length); var ia = new Uint8Array(ab);
+                for (var i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i);
+                _downloadBlob(new Blob([ab], {type: mime}), fname);
+              } catch(e) { _origClick.call(this); }
+            }
+            return;
+          }
+          _origClick.call(this);
+        };
+      }
+
+      window._downloadBlob = _downloadBlob;
+      window._isWebView = _isWebView;
+      window._showManualDownloadLink = _showOverlay;
+      window.exportTableToExcel = exportTableToExcel;
+      window.exportTableToPDF = exportTableToPDF;
+    })();
+    </script>
 
     {% load ai_tags %}
     {% get_ai_name as ai_display_name %}
