@@ -6,9 +6,9 @@
    ==========================================================================
 {% endcomment %}
 {% load static %}
-{# Logo dinamis dari Pengaturan Sistem Jika system_logo diupload, gunakan itu. Jika tidak, fallback ke SVG default Materialize.#}
+{# Logo dinamis dari Pengaturan Sistem. Jika system_logo diupload, gunakan itu. Jika tidak, fallback ke logo default SERPTECH. #}
 {% if system_logo_url %}
-<img src="{{ system_logo_url }}" alt="{{ system_title|default:'ERP System' }}" style="max-height: 30px; width: auto; object-fit: contain;">
+<img src="{{ system_logo_url }}" alt="{{ system_title|default:'SIMKOS' }}" style="max-height: 30px; width: auto; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'img/favicon/logo-default.png' %}';">
 {% else %}
 <img src="{% static 'img/favicon/logo-default.png' %}" alt="{{ system_title|default:'SIMKOS' }}" style="max-height: 30px; width: auto; object-fit: contain;">
 {% endif %}

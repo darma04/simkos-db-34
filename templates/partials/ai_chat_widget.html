@@ -11,7 +11,7 @@
 /* ═══════ AI CHAT WIDGET ═══════ */
 #ai-chat-fab {
   position: fixed;
-  bottom: 24px;
+  bottom: 80px;
   right: 24px;
   z-index: 1090;
   width: 52px;
@@ -24,6 +24,9 @@
   justify-content: center;
   font-size: 22px;
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+#ai-chat-fab.ai-fab-hidden {
+  display: none !important;
 }
 #ai-chat-fab:hover { transform: scale(1.08); }
 
@@ -293,7 +296,10 @@
     border-radius: 0;
   }
   .ai-chat-header { border-radius: 0; }
-  #ai-chat-fab { bottom: 16px; right: 16px; }
+  #ai-chat-fab { bottom: 60px; right: 16px; }
+  .ai-chat-input-wrap {
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)) 14px !important;
+  }
 }
 </style>
 
@@ -361,7 +367,7 @@
   // Toggle panel — buka chat
   fab.addEventListener('click', function() {
     panel.classList.add('visible');
-    fab.style.display = 'none';
+    fab.classList.add('ai-fab-hidden');
     setTimeout(function(){ input.focus(); }, 200);
 
     // Saat pertama kali buka: load history + insight
@@ -374,7 +380,7 @@
   // Close button di header — tutup chat
   document.getElementById('aiCloseChat').addEventListener('click', function() {
     panel.classList.remove('visible');
-    fab.style.display = '';
+    fab.classList.remove('ai-fab-hidden');
   });
 
   // ═══════ LOAD HISTORY DARI DATABASE ═══════

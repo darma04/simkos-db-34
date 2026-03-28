@@ -152,11 +152,24 @@ def pengaturan_perusahaan(request):
     try:
         from apps.pengaturan.models import PengaturanPerusahaan
         pengaturan = PengaturanPerusahaan.load()  # Muat singleton (pk=1)
+
+        # Akses system_logo.url dengan try/except agar aman jika file fisik sudah dihapus
+        try:
+            system_logo_url = pengaturan.system_logo.url if pengaturan.system_logo else None
+        except Exception:
+            system_logo_url = None
+
+        # Akses system_favicon.url dengan try/except agar aman jika file fisik sudah dihapus
+        try:
+            system_favicon_url = pengaturan.system_favicon.url if pengaturan.system_favicon else None
+        except Exception:
+            system_favicon_url = None
+
         result = {
             'pengaturan': pengaturan,
-            'system_logo_url': pengaturan.system_logo.url if pengaturan.system_logo else None,
-            'system_favicon_url': pengaturan.system_favicon.url if pengaturan.system_favicon else None,
-            'system_title': pengaturan.system_title or 'ERP System',
+            'system_logo_url': system_logo_url,
+            'system_favicon_url': system_favicon_url,
+            'system_title': pengaturan.system_title or 'SIMKOS',
             'system_description': pengaturan.system_description or '',  # Deskripsi untuk meta tag SEO
             'system_keywords': pengaturan.system_keywords or '',        # Keywords untuk meta tag SEO
         }
@@ -167,7 +180,7 @@ def pengaturan_perusahaan(request):
             'pengaturan': None,
             'system_logo_url': None,
             'system_favicon_url': None,
-            'system_title': 'ERP System',
+            'system_title': 'SIMKOS',
             'system_description': '',   # Fallback kosong untuk deskripsi
             'system_keywords': '',       # Fallback kosong untuk keywords
         }
