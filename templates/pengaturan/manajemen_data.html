@@ -313,12 +313,12 @@
                         </div>
                         <div>
                             <h5 class="mb-1">Backup Semua Data</h5>
-                            <p class="text-muted mb-0 small">Download seluruh database ke file JSON</p>
+                            <p class="text-muted mb-0 small">Download seluruh data + gambar ke file ZIP</p>
                         </div>
                     </div>
                     <p class="mb-3">
-                        Buat cadangan <strong>seluruh database</strong> termasuk properti, kamar, penyewa, karyawan, kontrak sewa, tagihan, pembayaran, biaya, pengaturan, dan user. 
-                        File backup bisa digunakan untuk restore di kemudian hari.
+                        Buat cadangan <strong>seluruh database</strong> dan file media (gambar properti, foto penyewa, bukti biaya, logo, dll). 
+                        File backup berformat ZIP bisa digunakan untuk restore di kemudian hari.
                     </p>
                     <form method="post" action="{% url 'pengaturan:backup_data' %}" id="backupForm">
                         {% csrf_token %}
@@ -349,7 +349,7 @@
                         </div>
                     </div>
                     <p class="mb-3">
-                        Pulihkan <strong>seluruh data</strong> (properti, kamar, penyewa, karyawan, kontrak, tagihan, pembayaran, biaya, user) dari file backup JSON. 
+                        Pulihkan <strong>seluruh data</strong> dari file backup ZIP (data + gambar) atau JSON (data saja). 
                         Data lama akan ditimpa dengan data dari file backup.
                     </p>
                     <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#restoreModal">
@@ -378,8 +378,8 @@
                         </div>
                     </div>
                     <p class="mb-3">
-                        Hapus <strong class="text-danger">SEMUA DATA</strong> di database (Properti, Kamar, Penyewa, Karyawan, Kontrak, Tagihan, Pembayaran, Biaya, Log). 
-                        Hanya akun Anda yang dipertahankan.
+                        Hapus <strong class="text-danger">SEMUA DATA</strong> di database dan file media (Properti, Kamar, Penyewa, Karyawan, Kontrak, Tagihan, Pembayaran, Biaya, Log, Gambar). 
+                        Hanya akun Anda dan logo default yang dipertahankan.
                     </p>
                     <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#resetModal">
                         <i class="ri-delete-bin-7-line me-1"></i>
@@ -589,9 +589,9 @@
                         Pastikan Anda sudah membuat backup terlebih dahulu.
                     </div>
                     <div class="mb-3">
-                        <label for="backup_file" class="form-label">Pilih File Backup (.json)</label>
-                        <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".json" required>
-                        <div class="form-text">Hanya file .json yang diperbolehkan</div>
+                        <label for="backup_file" class="form-label">Pilih File Backup (.zip atau .json)</label>
+                        <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".zip,.json" required>
+                        <div class="form-text">File .zip (data + gambar) atau .json (data saja, backward compatible)</div>
                     </div>
                     <div id="fileInfo" class="d-none">
                         <div class="d-flex align-items-center p-2 bg-light rounded">
@@ -643,6 +643,7 @@
                         <li><i class="ri-close-circle-line text-danger me-1"></i> Kategori Biaya, Template Cetak</li>
                         <li><i class="ri-close-circle-line text-danger me-1"></i> Activity Log, Log Notifikasi, Riwayat Backup</li>
                         <li><i class="ri-close-circle-line text-danger me-1"></i> Semua User (kecuali akun Anda)</li>
+                        <li><i class="ri-close-circle-line text-danger me-1"></i> File media/gambar (kecuali logo default)</li>
                     </ul>
                     <p>Yang <strong class="text-success">DIPERTAHANKAN</strong>:</p>
                     <ul class="list-unstyled mb-3">

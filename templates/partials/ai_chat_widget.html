@@ -317,7 +317,7 @@
     </div>
     <div class="ai-chat-header-info">
       <h6>{{ ai_name|default:"AI Assistant" }}</h6>
-      <small>SIMKOS Software</small>
+      <small>SIMKOS</small>
     </div>
     <div class="ai-chat-header-actions">
       <button class="btn" id="aiClearHistory" title="Hapus riwayat chat">
@@ -730,7 +730,7 @@
 
     var lines = [];
     lines.push('═══════════════════════════════════════════════');
-    lines.push('  RIWAYAT CHAT AI ASSISTANT — SIMKOS Software');
+    lines.push('  RIWAYAT CHAT AI ASSISTANT — SIMKOS');
     lines.push('═══════════════════════════════════════════════');
     lines.push('Tanggal: ' + new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'}));
     lines.push('Waktu  : ' + new Date().toLocaleTimeString('id-ID'));
@@ -747,7 +747,7 @@
     });
 
     lines.push('───────────────────────────────────────────────');
-    lines.push('Dihasilkan oleh SIMKOS Software AI Assistant');
+    lines.push('Dihasilkan oleh SIMKOS AI Assistant');
 
     var content = lines.join('\n');
     var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });

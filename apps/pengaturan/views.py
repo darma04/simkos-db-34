@@ -2,14 +2,16 @@
 ==========================================================================
 PENGATURAN VIEWS - Settings/Konfigurasi Sistem SIMKOS
 ==========================================================================
-ProfilView        → Edit profil pengguna
-PerusahaanView    → Pengaturan perusahaan + sistem
-TemplateCetak     → Konfigurasi cetak dokumen
-ManajemenData     → Statistik DB, backup, restore, reset
+ProfilView        â†’ Edit profil pengguna
+PerusahaanView    â†’ Pengaturan perusahaan + sistem
+TemplateCetak     â†’ Konfigurasi cetak dokumen
+ManajemenData     â†’ Statistik DB, backup, restore, reset
 ==========================================================================
 """
 import os
 import json
+import shutil
+import zipfile
 import tempfile
 from datetime import datetime
 
@@ -111,7 +113,7 @@ class PerusahaanView(UpdatePermissionMixin, UpdateView):
         return super().form_invalid(form)
 
 
-# ── TEMPLATE CETAK CRUD ──
+# â”€â”€ TEMPLATE CETAK CRUD â”€â”€
 
 class TemplateCetakListView(ReadPermissionMixin, ListView):
     paginate_by = 50
@@ -179,7 +181,7 @@ class TemplateCetakCreateView(CreatePermissionMixin, CreateView):
         return super().form_valid(form)
 
 
-# ── MANAJEMEN DATA ──
+# â”€â”€ MANAJEMEN DATA â”€â”€
 
 class ManajemenDataView(ReadPermissionMixin, TemplateView):
     """Statistik database + riwayat backup."""
@@ -259,80 +261,144 @@ class ManajemenDataView(ReadPermissionMixin, TemplateView):
 @login_required
 @require_POST
 def backup_data(request):
-    """Export seluruh database ke file JSON."""
+    """Export seluruh database ke file ZIP berisi data JSON + folder media (gambar)."""
     if not request.user.is_superuser and not has_permission(request.user, 'create', 'pengaturan'):
         messages.error(request, 'Anda tidak memiliki izin untuk backup data.')
         return redirect('pengaturan:manajemen_data')
 
+    tmp_dir = None
     try:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        nama_file = f"backup_{timestamp}.json"
+        nama_file = f"backup_{timestamp}.zip"
+
+        # === 1. DUMP DATABASE KE JSON ===
         from io import StringIO
         output = StringIO()
-        # --all: termasuk proxy model, --natural-foreign: portabilitas content type
-        # JANGAN pakai --natural-primary agar integer PK tetap terjaga saat restore
         call_command('dumpdata', '--all', '--natural-foreign',
                     '--exclude=contenttypes', '--exclude=auth.permission',
                     '--exclude=admin.logentry', '--exclude=sessions.session',
                     '--indent=2', stdout=output)
         json_data = output.getvalue()
-        file_size = len(json_data.encode('utf-8'))
-        # Hitung jumlah record
-        record_count = json_data.count('"model":')
+
+        # === 2. BUAT FILE ZIP BERISI data.json + media/ ===
+        tmp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(tmp_dir, nama_file)
+        media_root = str(settings.MEDIA_ROOT) if hasattr(settings, 'MEDIA_ROOT') else os.path.join(str(settings.BASE_DIR), 'media')
+
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Tambahkan data.json
+            zf.writestr('data.json', json_data)
+
+            # Tambahkan seluruh isi folder media/ jika ada
+            if os.path.exists(media_root):
+                for root, dirs, files in os.walk(media_root):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.join('media', os.path.relpath(file_path, media_root))
+                        try:
+                            zf.write(file_path, arcname)
+                        except (PermissionError, OSError):
+                            pass
+
+        file_size = os.path.getsize(zip_path)
+
+        # Hitung jumlah file media
+        media_count = 0
+        if os.path.exists(media_root):
+            for _, _, files in os.walk(media_root):
+                media_count += len(files)
+
         BackupHistory.objects.create(
             nama_file=nama_file, ukuran_file=file_size, jenis='backup',
-            status='sukses', catatan=f"Backup seluruh database ({record_count} record, {file_size / 1024:.1f} KB)",
+            status='sukses',
+            catatan=f"Backup database + {media_count} file media ({file_size / 1024:.1f} KB)",
             dibuat_oleh=request.user)
-        response = HttpResponse(json_data, content_type='application/json')
+
+        with open(zip_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="{nama_file}"'
         return response
     except Exception as e:
         BackupHistory.objects.create(
-            nama_file=f"backup_gagal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            nama_file=f"backup_gagal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
             ukuran_file=0, jenis='backup', status='gagal',
             catatan=f"Error: {str(e)}", dibuat_oleh=request.user)
         messages.error(request, f'Backup gagal: {str(e)}')
         return redirect('pengaturan:manajemen_data')
+    finally:
+        if tmp_dir and os.path.exists(tmp_dir):
+            try:
+                shutil.rmtree(tmp_dir)
+            except OSError:
+                pass
 
 
 @login_required
 @require_POST
 def restore_data(request):
     """
-    Restore data dari file backup JSON.
-    ────────────────────────────────────
-    Strategi (mengikuti pola SERPTECH):
-    1. SIMPAN user admin yang sedang login → agar session tetap valid
+    Restore data dari file backup ZIP (data.json + media/) atau JSON (backward compatible).
+    Strategi:
+    1. SIMPAN user admin yang sedang login â†’ agar session tetap valid
     2. Hapus SEMUA data per-model (child dulu, parent terakhir)
-    3. Hapus profile admin juga (agar loaddata bisa recreate tanpa UNIQUE error)
-    4. Matikan FK constraints saat loaddata → cegah FOREIGN KEY error
-    5. Load data dari backup (fallback: item-by-item jika gagal)
-    6. Nyalakan kembali FK constraints
-    7. Pastikan admin tetap punya profile setelah restore
-    8. VACUUM database
+    3. Matikan FK constraints saat loaddata â†’ cegah FOREIGN KEY error
+    4. Load data dari backup (fallback: item-by-item jika gagal)
+    5. Restore file media dari ZIP (jika ada)
+    6. Pastikan admin tetap punya profile setelah restore
+    7. VACUUM database
     """
     if not request.user.is_superuser and not has_permission(request.user, 'create', 'pengaturan'):
         messages.error(request, 'Anda tidak memiliki izin untuk restore data.')
         return redirect('pengaturan:manajemen_data')
 
     if 'backup_file' not in request.FILES:
-        messages.error(request, 'File backup tidak ditemukan. Pilih file .json untuk restore.')
+        messages.error(request, 'File backup tidak ditemukan. Pilih file .zip atau .json untuk restore.')
         return redirect('pengaturan:manajemen_data')
 
     backup_file = request.FILES['backup_file']
-    if not backup_file.name.endswith('.json'):
-        messages.error(request, 'Format file tidak valid. Hanya file .json yang diperbolehkan.')
+    if not backup_file.name.endswith('.json') and not backup_file.name.endswith('.zip'):
+        messages.error(request, 'Format file tidak valid. Hanya file .zip atau .json yang diperbolehkan.')
         return redirect('pengaturan:manajemen_data')
 
     tmp_path = None
+    tmp_extract_dir = None
+    is_zip = backup_file.name.endswith('.zip')
+
     try:
         import logging
         logger = logging.getLogger(__name__)
         from django.db import connection
         from io import StringIO
 
-        content = backup_file.read().decode('utf-8')
-        file_size = len(content.encode('utf-8'))
+        file_size = backup_file.size
+        media_restored = 0
+
+        # === LANGKAH 0: EKSTRAK JSON DARI ZIP ATAU BACA LANGSUNG ===
+        if is_zip:
+            tmp_extract_dir = tempfile.mkdtemp()
+            tmp_zip_path = os.path.join(tmp_extract_dir, 'backup.zip')
+            with open(tmp_zip_path, 'wb') as f:
+                for chunk in backup_file.chunks():
+                    f.write(chunk)
+
+            if not zipfile.is_zipfile(tmp_zip_path):
+                messages.error(request, 'File ZIP tidak valid atau rusak.')
+                return redirect('pengaturan:manajemen_data')
+
+            with zipfile.ZipFile(tmp_zip_path, 'r') as zf:
+                zf.extractall(tmp_extract_dir)
+
+            json_path = os.path.join(tmp_extract_dir, 'data.json')
+            if not os.path.exists(json_path):
+                messages.error(request, 'File ZIP tidak mengandung data.json. Format backup tidak valid.')
+                return redirect('pengaturan:manajemen_data')
+
+            with open(json_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            logger.info("[RESTORE] File ZIP diekstrak. Membaca data.json...")
+        else:
+            content = backup_file.read().decode('utf-8')
+            logger.info("[RESTORE] File JSON langsung dibaca.")
 
         # Validasi JSON
         try:
@@ -352,22 +418,19 @@ def restore_data(request):
         excluded_models = {'contenttypes.contenttype', 'auth.permission',
                             'admin.logentry', 'sessions.session'}
         filtered_data = [item for item in data if item.get('model') not in excluded_models]
-        model_set = set(item.get('model', '') for item in filtered_data)
 
         logger.info("[RESTORE] File: %s, ukuran: %d bytes, total objek: %d, setelah filter: %d",
                     backup_file.name, file_size, len(data), len(filtered_data))
 
-        # Simpan info user aktif
         current_user = request.user
         current_user_pk = current_user.pk
         current_username = current_user.username
 
-        # Tulis data ke file temp
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as tmp:
             json.dump(filtered_data, tmp, ensure_ascii=False, indent=2)
             tmp_path = tmp.name
 
-        # === LANGKAH 1: HAPUS SEMUA DATA LAMA (per-model, child→parent) ===
+        # === LANGKAH 1: HAPUS SEMUA DATA LAMA ===
         logger.info("[RESTORE] Langkah 1: Menghapus semua data lama...")
 
         from apps.sewa.models import PembayaranSewa, TagihanSewa, KontrakSewa
@@ -378,23 +441,17 @@ def restore_data(request):
         from apps.penyewa.models import Penyewa
         from auth.models import Profile
 
-        # Hapus transaksi (child dulu)
         PembayaranSewa.objects.all().delete()
         TagihanSewa.objects.all().delete()
         KontrakSewa.objects.all().delete()
         TransaksiBiaya.objects.all().delete()
         KategoriBiaya.objects.all().delete()
-
-        # Hapus master data
         Penyewa.objects.all().delete()
         Kamar.objects.all().delete()
         TipeKamar.objects.all().delete()
         Properti.objects.all().delete()
-
-        # Hapus metode pembayaran
         MetodePembayaran.objects.all().delete()
 
-        # Hapus HR data
         try:
             from apps.hr.models import Karyawan, Departemen
             Karyawan.objects.all().delete()
@@ -402,47 +459,34 @@ def restore_data(request):
         except Exception:
             pass
 
-        # Hapus log & pengaturan
         UserActivity.objects.all().delete()
         LogNotifikasi.objects.all().delete()
         TemplateCetak.objects.all().delete()
         BackupHistory.objects.all().delete()
 
-        # Hapus SEMUA profile (termasuk admin) agar loaddata bisa recreate tanpa UNIQUE error
         Profile.objects.all().delete()
-        # Hapus user LAIN (admin TETAP ADA agar session tidak rusak)
         User.objects.exclude(pk=current_user_pk).delete()
-
-        # Hapus pengaturan perusahaan (akan di-restore dari backup)
         PengaturanPerusahaan.objects.all().delete()
 
         logger.info("[RESTORE] Langkah 1 selesai: Semua data lama berhasil dihapus.")
 
         # === LANGKAH 2: LOAD DATA DARI BACKUP ===
         logger.info("[RESTORE] Langkah 2: Memuat data dari backup...")
-
-        # MATIKAN FK CONSTRAINTS sebelum loaddata
         with connection.cursor() as cursor:
             cursor.execute("PRAGMA foreign_keys = OFF")
-        logger.info("[RESTORE] FK constraints dimatikan sementara.")
 
         load_success = False
         load_error_msg = ""
 
-        # Percobaan 1: loaddata langsung
         try:
             stderr_output = StringIO()
             call_command('loaddata', tmp_path, '--ignorenonexistent', verbosity=0, stderr=stderr_output)
             load_success = True
-            load_error_msg = ""
             logger.info("[RESTORE] Langkah 2 sukses: loaddata berhasil.")
         except Exception as load_err:
-            load_success = False
             load_error_msg = str(load_err)
-            stderr_msg = stderr_output.getvalue()
-            logger.error("[RESTORE] Loaddata gagal (percobaan 1): %s | stderr: %s", load_err, stderr_msg)
+            logger.error("[RESTORE] Loaddata gagal (percobaan 1): %s", load_err)
 
-        # Percobaan 2: item-by-item jika loaddata langsung gagal
         if not load_success:
             logger.info("[RESTORE] Percobaan 2: load item per item")
             success_count = 0
@@ -455,7 +499,6 @@ def restore_data(request):
                     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as stmp:
                         json.dump([item], stmp, ensure_ascii=False)
                         single_tmp = stmp.name
-
                     call_command('loaddata', single_tmp, '--ignorenonexistent', verbosity=0, stderr=StringIO())
                     success_count += 1
                 except Exception as item_err:
@@ -476,14 +519,49 @@ def restore_data(request):
                 load_error_msg = f"Dimuat {success_count} objek, {error_count} gagal"
                 if error_models:
                     load_error_msg += f" (model gagal: {', '.join(error_models[:5])})"
-                logger.info("[RESTORE] Item-by-item: %s", load_error_msg)
 
-        # NYALAKAN kembali FK constraints
         with connection.cursor() as cursor:
             cursor.execute("PRAGMA foreign_keys = ON")
-        logger.info("[RESTORE] FK constraints diaktifkan kembali.")
 
-        # === LANGKAH 3: PASTIKAN ADMIN TETAP PUNYA PROFILE ===
+        # === LANGKAH 3: RESTORE FILE MEDIA DARI ZIP ===
+        if is_zip and tmp_extract_dir:
+            media_source = os.path.join(tmp_extract_dir, 'media')
+            media_root = str(settings.MEDIA_ROOT) if hasattr(settings, 'MEDIA_ROOT') else os.path.join(str(settings.BASE_DIR), 'media')
+
+            if os.path.exists(media_source):
+                logger.info("[RESTORE] Langkah 3: Merestore file media...")
+
+                if os.path.exists(media_root):
+                    for item_name in os.listdir(media_root):
+                        item_path = os.path.join(media_root, item_name)
+                        try:
+                            if os.path.isdir(item_path):
+                                shutil.rmtree(item_path)
+                            else:
+                                os.unlink(item_path)
+                        except (PermissionError, OSError) as e:
+                            logger.warning("[RESTORE] Gagal hapus media lama %s: %s", item_path, e)
+                else:
+                    os.makedirs(media_root, exist_ok=True)
+
+                for item_name in os.listdir(media_source):
+                    src = os.path.join(media_source, item_name)
+                    dst = os.path.join(media_root, item_name)
+                    try:
+                        if os.path.isdir(src):
+                            shutil.copytree(src, dst, dirs_exist_ok=True)
+                        else:
+                            shutil.copy2(src, dst)
+                    except Exception as e:
+                        logger.warning("[RESTORE] Gagal copy media %s: %s", item_name, e)
+
+                media_file_count = 0
+                for _, _, files in os.walk(media_root):
+                    media_file_count += len(files)
+                media_restored = media_file_count
+                logger.info("[RESTORE] Langkah 3 selesai: %d file media di-restore.", media_restored)
+
+        # === LANGKAH 4: PASTIKAN ADMIN TETAP PUNYA PROFILE ===
         try:
             if not Profile.objects.filter(user=current_user).exists():
                 Profile.objects.create(
@@ -495,7 +573,6 @@ def restore_data(request):
         except Exception as profile_err:
             logger.warning("[RESTORE] Gagal membuat profile admin: %s", profile_err)
 
-        # Pastikan admin tetap superuser
         try:
             current_user.refresh_from_db()
             if not current_user.is_superuser:
@@ -505,31 +582,30 @@ def restore_data(request):
         except Exception:
             pass
 
-        # Re-login user agar session tetap valid
         try:
             from django.contrib.auth import login
             login(request, current_user)
         except Exception:
             pass
 
-        # === LANGKAH 4: VACUUM DATABASE ===
+        # === LANGKAH 5: VACUUM DATABASE ===
         try:
             with connection.cursor() as cursor:
                 cursor.execute("VACUUM")
-            logger.info("[RESTORE] VACUUM database selesai.")
-        except Exception as vac_err:
-            logger.warning("[RESTORE] VACUUM gagal (tidak fatal): %s", vac_err)
+        except Exception:
+            pass
 
         if load_success:
+            media_info = f", {media_restored} file media" if media_restored > 0 else ""
             try:
                 BackupHistory.objects.create(
                     nama_file=backup_file.name, ukuran_file=file_size, jenis='restore',
                     status='sukses',
-                    catatan=f"Restore dari {backup_file.name} ({file_size / 1024:.1f} KB) - {len(filtered_data)} objek. {load_error_msg}",
+                    catatan=f"Restore dari {backup_file.name} ({file_size / 1024:.1f} KB) - {len(filtered_data)} objek{media_info}. {load_error_msg}",
                     dibuat_oleh=current_user)
             except Exception:
                 pass
-            messages.success(request, f'Data berhasil di-restore dari "{backup_file.name}"! ({len(filtered_data)} objek dimuat) {load_error_msg}')
+            messages.success(request, f'Data berhasil di-restore dari "{backup_file.name}"! ({len(filtered_data)} objek dimuat{media_info}) {load_error_msg}')
         else:
             raise Exception(f"Semua metode restore gagal: {load_error_msg}")
 
@@ -545,23 +621,23 @@ def restore_data(request):
             pass
         messages.error(request, f'Restore gagal: {str(e)}')
     finally:
-        # Pastikan FK constraints selalu aktif
         try:
             from django.db import connection as conn
             with conn.cursor() as cursor:
                 cursor.execute("PRAGMA foreign_keys = ON")
         except Exception:
             pass
-        # Hapus temp file
         if tmp_path and os.path.exists(tmp_path):
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
+        if tmp_extract_dir and os.path.exists(tmp_extract_dir):
+            try:
+                shutil.rmtree(tmp_extract_dir)
+            except OSError:
+                pass
     return redirect('pengaturan:manajemen_data')
-
-
-
 
 @login_required
 @require_POST
@@ -671,15 +747,36 @@ def reset_data(request):
 
         # Catatan: Pengaturan Perusahaan DIPERTAHANKAN sesuai keterangan di template
 
+        # 8. Hapus file media (gambar, foto, bukti, dll) KECUALI folder system/ untuk logo default
+        media_deleted = 0
+        media_root = str(settings.MEDIA_ROOT) if hasattr(settings, 'MEDIA_ROOT') else os.path.join(str(settings.BASE_DIR), 'media')
+        if os.path.exists(media_root):
+            protected_folders = {'system'}
+            for item_name in os.listdir(media_root):
+                if item_name in protected_folders:
+                    continue
+                item_path = os.path.join(media_root, item_name)
+                try:
+                    if os.path.isdir(item_path):
+                        for _, _, files in os.walk(item_path):
+                            media_deleted += len(files)
+                        shutil.rmtree(item_path)
+                    else:
+                        media_deleted += 1
+                        os.unlink(item_path)
+                except (PermissionError, OSError):
+                    pass
+
         detail_parts = [f"{name}: {count}" for name, count in counts.items() if count > 0]
         detail_str = ", ".join(detail_parts) if detail_parts else "Tidak ada data"
+        media_info = f", {media_deleted} file media dihapus" if media_deleted > 0 else ""
 
         # Buat record riwayat SETELAH menghapus semua
         BackupHistory.objects.create(
             nama_file='reset_semua_data', ukuran_file=0, jenis='reset', status='sukses',
-            catatan=f"Hapus SEMUA data ({total_deleted} record). Detail: {detail_str}",
+            catatan=f"Hapus SEMUA data ({total_deleted} record{media_info}). Detail: {detail_str}",
             dibuat_oleh=current_user)
-        messages.success(request, f'Semua data berhasil dihapus! {total_deleted} record dihapus. Hanya akun admin Anda yang dipertahankan.')
+        messages.success(request, f'Semua data berhasil dihapus! {total_deleted} record{media_info}. Hanya akun admin Anda yang dipertahankan.')
 
         # VACUUM database agar ukuran file SQLite langsung berkurang
         try:
@@ -815,7 +912,7 @@ def db_stats_api(request):
     return JsonResponse(data)
 
 
-# ── METODE PEMBAYARAN CRUD ──
+# â”€â”€ METODE PEMBAYARAN CRUD â”€â”€
 
 class MetodePembayaranListView(ReadPermissionMixin, ListView):
     paginate_by = 50
