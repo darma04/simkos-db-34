@@ -26,9 +26,11 @@ from django.shortcuts import redirect          # Fungsi redirect ke URL lain
 from django.contrib.auth.models import User, Group  # Model User & Group bawaan Django
 from django.contrib import messages             # Framework pesan flash
 from django.conf import settings                # Akses pengaturan Django
+from django.utils.decorators import method_decorator  # Decorator untuk CBV
 from auth.views import AuthView                 # Base class autentikasi
 from auth.helpers import send_verification_email  # Fungsi kirim email verifikasi
 from auth.models import Profile                 # Model Profile
+from auth.rate_limit import rate_limit_view     # Rate limit decorator
 import uuid                                    # Modul untuk generate token unik (UUID v4)
 
 
@@ -41,6 +43,10 @@ class RegisterView(AuthView):
     Method:
     - get(): Tampilkan form registrasi
     - post(): Proses pendaftaran user baru
+
+    Rate Limit:
+    - POST dibatasi 5 percobaan per 1 jam per IP
+    - Mencegah pembuatan akun spam secara massal
     """
 
     def get(self, request):
@@ -54,6 +60,7 @@ class RegisterView(AuthView):
             return redirect("dashboard:index")
         return super().get(request)
 
+    @method_decorator(rate_limit_view(max_attempts=5, period=3600, redirect_url='register'))
     def post(self, request):
         """
         Proses registrasi user baru (POST).

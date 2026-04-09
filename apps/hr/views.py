@@ -963,10 +963,15 @@ class PenggajianCreateView(CreatePermissionMixin, CreateView):
 
 
     def form_valid(self, form):
-
         form.instance.dibuat_oleh = self.request.user  # User yang membuat slip
+        response = super().form_valid(form)
+        from apps.automation.signals import kirim_notifikasi_penggajian
+        try:
+            kirim_notifikasi_penggajian(self.object)
+        except Exception as e:
+            print('Gagal kirim notifikasi telegram:', e)
         messages.success(self.request, 'Slip gaji berhasil dibuat')
-        return super().form_valid(form)
+        return response
 
 
 
@@ -1135,7 +1140,7 @@ class GeneratePenggajianView(CreatePermissionMixin, TemplateView):
                 # Buat slip gaji baru
                 # gaji_pokok: prioritas dari karyawan, fallback ke jabatan
                 # tunjangan_jabatan: dari jabatan karyawan (jika ada)
-                Penggajian.objects.create(
+                new_slip = Penggajian.objects.create(
                     karyawan=karyawan,
                     periode_bulan=bulan,
                     periode_tahun=tahun,
@@ -1145,6 +1150,11 @@ class GeneratePenggajianView(CreatePermissionMixin, TemplateView):
                     tunjangan_transport=tunjangan_transport,
                     dibuat_oleh=request.user  # User yang menjalankan generate
                 )
+                from apps.automation.signals import kirim_notifikasi_penggajian
+                try:
+                    kirim_notifikasi_penggajian(new_slip)
+                except Exception as e:
+                    print('Gagal telegram massal:', e)
                 created_count += 1
 
             # Tampilkan ringkasan hasil generate

@@ -29,7 +29,9 @@ from django.shortcuts import redirect                  # Fungsi untuk redirect k
 from django.contrib.auth import authenticate, login     # Fungsi autentikasi Django
 from django.contrib.auth.models import User             # Model User bawaan Django
 from django.contrib import messages                     # Framework pesan flash Django
+from django.utils.decorators import method_decorator    # Decorator untuk CBV
 from auth.views import AuthView                         # Base class untuk view autentikasi
+from auth.rate_limit import rate_limit_view             # Rate limit decorator
 
 
 class LoginView(AuthView):
@@ -42,6 +44,10 @@ class LoginView(AuthView):
     Method:
     - get(): Menampilkan form login
     - post(): Memproses submit form login
+
+    Rate Limit:
+    - POST dibatasi 5 percobaan per 5 menit per IP
+    - Mencegah serangan brute-force (tebak password)
     """
 
     def get(self, request):
@@ -60,6 +66,7 @@ class LoginView(AuthView):
         # super().get() memanggil TemplateView.get() yang me-render template
         return super().get(request)
 
+    @method_decorator(rate_limit_view(max_attempts=5, period=300, redirect_url='login'))
     def post(self, request):
         """
         Memproses form login (method POST).

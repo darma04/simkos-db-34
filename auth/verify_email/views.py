@@ -25,9 +25,11 @@
 from django.shortcuts import redirect          # Fungsi redirect
 from django.contrib import messages             # Framework pesan flash
 from django.conf import settings                # Akses pengaturan Django
+from django.utils.decorators import method_decorator  # Decorator untuk CBV
 from auth.views import AuthView                 # Base class autentikasi
 from auth.models import Profile                 # Model Profile
 from auth.helpers import send_verification_email  # Fungsi kirim email verifikasi
+from auth.rate_limit import rate_limit_view     # Rate limit decorator
 import uuid                                    # Modul generate token unik
 
 
@@ -105,8 +107,13 @@ class SendVerificationView(AuthView):
     Mendukung 2 skenario:
     1. User sudah login → ambil email dari profile
     2. User belum login → ambil email dari session (disimpan saat registrasi)
+
+    Rate Limit:
+    - GET dibatasi 3 percobaan per 10 menit per IP
+    - Mencegah spam pengiriman email verifikasi
     """
 
+    @method_decorator(rate_limit_view(max_attempts=3, period=600, redirect_url='verify-email-page'))
     def get(self, request):
         """
         Kirim ulang email verifikasi (GET).

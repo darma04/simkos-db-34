@@ -60,6 +60,23 @@ class PengaturanTelegram(models.Model):
     notif_biaya = models.BooleanField(default=True, verbose_name="Notifikasi Biaya Operasional")
     notif_gaji = models.BooleanField(default=True, verbose_name="Notifikasi Gaji Karyawan KOS")
     
+    # Toggle kirim PDF — jika True, setiap notifikasi juga mengirim file PDF
+    kirim_pdf = models.BooleanField(
+        default=True,
+        verbose_name="Kirim PDF Otomatis",
+        help_text="Jika aktif, setiap notifikasi juga akan mengirim file PDF dokumen ke Telegram"
+    )
+
+    # ═══ FIELD: System Prompt Bot Telegram ═══
+    # Instruksi kustom untuk mengatur perilaku AI chatbot di Telegram
+    # Jika kosong, akan menggunakan system prompt default dari telegram_bot.py
+    system_prompt_bot = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="System Prompt Bot AI",
+        help_text="Instruksi tambahan untuk mengatur perilaku AI chatbot Telegram. Kosongkan untuk menggunakan default."
+    )
+
     dibuat_pada = models.DateTimeField(auto_now_add=True)
     diupdate_pada = models.DateTimeField(auto_now=True)
     

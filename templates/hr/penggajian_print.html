@@ -2,9 +2,9 @@
 ==========================================================================
    PENGGAJIAN PRINT - Template Cetak Slip Gaji (Standalone A4)
    Template cetak standalone untuk Slip Gaji karyawan.
-   Layout profesional A4's langsung print.
-   Menggunakan TemplateCetak untuk header, footer, dan signature —
-   konsisten dengan PO/SO/Invoice print.
+   Layout profesional A4 langsung print.
+   Menggunakan TABLE layout agar konsisten di browser DAN xhtml2pdf (Telegram PDF).
+   Menggunakan TemplateCetak untuk header, footer, dan signature.
    ==========================================================================
 {% endcomment %}
 {% load humanize %}
@@ -16,521 +16,237 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Slip Gaji - {{ slip.karyawan.nama }} - {{ slip.periode }}</title>
     <style>
-        /* ============================================
-           RESET & BASE
-           ============================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Arial', sans-serif; font-size: 12px; line-height: 1.6; color: #333; padding: 20px; background: #f5f5f5; }
+
+        .slip-container { max-width: 800px; margin: 0 auto; background: white; padding: 35px 40px; border: 1px solid #ddd; }
+
+        /* Header */
+        .header-table { width: 100%; border-bottom: 3px solid #696cff; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-table td { vertical-align: top; }
+        .company-logo { height: 26px; width: auto; vertical-align: middle; }
+        .company-name { font-size: 22px; font-weight: bold; color: #696cff; margin-bottom: 4px; }
+        .company-details { font-size: 11px; color: #666; line-height: 1.5; }
+        .slip-title h1 { font-size: 28px; color: #696cff; margin-bottom: 2px; letter-spacing: 1px; }
+        .slip-period { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .slip-status { display: inline-block; padding: 6px 20px; -webkit-border-radius: 20px; border-radius: 20px; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;  margin-top: 12px; }
+        .status-draft { background-color: #e0e0e0; color: #666; border: 1px solid #ccc; }
+        .status-diproses { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .status-dibayar { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+        /* Info Karyawan */
+        .employee-table { width: 100%; margin-bottom: 25px; background: #f8f9fa; border: 1px solid #e9ecef; }
+        .employee-table td { padding: 15px 20px; vertical-align: top; }
+        .info-group h3 { font-size: 11px; color: #696cff; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-row { margin-bottom: 4px; font-size: 12px; }
+        .info-label { font-weight: bold; display: inline-block; width: 130px; color: #555; }
+        .info-value { color: #333; }
+
+        /* Tabel Gaji */
+        .salary-wrapper { width: 100%; margin-bottom: 20px; }
+        .salary-wrapper td { vertical-align: top; width: 50%; }
+        .salary-wrapper td:first-child { padding-right: 10px; }
+        .salary-wrapper td:last-child { padding-left: 10px; }
+
+        .column-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px 4px 12px; margin-bottom: 0; }
+        .column-header-income { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; border-bottom: none; }
+        .column-header-deduction { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; border-bottom: none; }
+
+        .salary-table { width: 100%; border-collapse: collapse; }
+        .salary-table th { padding: 8px 10px 4px 10px; text-align: left; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; background: #f8f9fa; border: 1px solid #dee2e6; color: #555; }
+        .salary-table th.text-right { text-align: right; }
+        .salary-table td { padding: 6px 10px 2px 10px; border: 1px solid #dee2e6; font-size: 11.5px; }
+        .salary-table .text-right { text-align: right; }
+        .salary-table .total-row td { font-weight: bold; font-size: 12px; }
+        .total-income td { background: #e8f5e9; color: #2e7d32; border-top: 2px solid #2e7d32; }
+        .total-deduction td { background: #ffebee; color: #c62828; border-top: 2px solid #c62828; }
+
+        /* Box Gaji Bersih */
+        .net-salary-box { background: #696cff; padding: 18px 25px; margin-bottom: 20px; text-align: center; }
+        .net-salary-box table { width: 100%; }
+        .net-salary-label { font-size: 14px; font-weight: 600; color: #fff; }
+        .net-salary-amount { font-size: 22px; font-weight: 800; color: #fff; }
+
+        /* Catatan */
+        .notes-section { background: #fff3cd; padding: 12px 15px; border-left: 4px solid #ffc107; margin-bottom: 20px; }
+        .notes-section h4 { font-size: 11px; margin-bottom: 4px; color: #856404; }
+        .notes-section p { font-size: 11px; color: #856404; margin: 0; }
+
+        /* Tanda Tangan */
+        .signature-table { width: 100%; margin-top: 50px; margin-bottom: 25px; }
+        .sig-label { font-size: 11px; color: #666; }
+        .signature-line { border-top: 1px solid #333; margin-top: 65px; padding-top: 6px; font-size: 12px; font-weight: 600; text-align: center; }
+        .sig-title { font-size: 10px; color: #888; margin-top: 2px; text-align: center; }
+
+        /* Footer */
+        .footer-table { width: 100%; border-top: 1px solid #ddd; margin-top: 10px; }
+        .footer-table td { padding-top: 25px; text-align: center; font-size: 10px; color: #888; line-height: 1.8; }
+        .footer-table p { margin: 0 0 3px 0; }
+        .footer-timestamp { margin-top: 8px; font-size: 9px; color: #aaa; }
+
+        /* Mobile Responsive */
+        @media screen and (max-width: 768px) {
+            body { padding: 10px; }
+            .slip-container { padding: 15px; }
+            .company-name { font-size: 18px; }
+            .slip-title h1 { font-size: 22px; }
+            .info-label { width: 100px; }
+            .salary-wrapper td { display: block; width: 100%; padding: 0 !important; margin-bottom: 15px; }
+            .net-salary-amount { font-size: 18px; }
         }
 
-        body {
-            font-family: 'Segoe UI', 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.6;
-            color: #333;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-
-        /* ============================================
-           CONTAINER UTAMA
-           ============================================ */
-        .slip-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 35px 40px;
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        /* ============================================
-           HEADER PERUSAHAAN
-           ============================================ */
-        .slip-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #696cff;
-        }
-
-        .company-info {
-            flex: 1;
-        }
-
-        .company-name {
-            font-size: 22px;
-            font-weight: bold;
-            color: #696cff;
-            margin-bottom: 4px;
-        }
-
-        .company-details {
-            font-size: 11px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .slip-title-section {
-            text-align: right;
-        }
-
-        .slip-title-section h1 {
-            font-size: 28px;
-            color: #696cff;
-            margin-bottom: 2px;
-            letter-spacing: 1px;
-        }
-
-        .slip-period {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        .slip-status {
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-
-        .status-draft { background: #e0e0e0; color: #666; }
-        .status-diproses { background: #fff3cd; color: #856404; }
-        .status-dibayar { background: #d4edda; color: #155724; }
-
-        /* ============================================
-           INFO KARYAWAN
-           ============================================ */
-        .employee-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 25px;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 15px 20px;
-        }
-
-        .info-group {
-            flex: 1;
-        }
-
-        .info-group h3 {
-            font-size: 11px;
-            color: #696cff;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-row {
-            margin-bottom: 4px;
-            font-size: 12px;
-        }
-
-        .info-label {
-            font-weight: bold;
-            display: inline-block;
-            width: 130px;
-            color: #555;
-        }
-
-        .info-value {
-            color: #333;
-        }
-
-        /* ============================================
-           TABEL GAJI (2 kolom side-by-side)
-           ============================================ */
-        .salary-tables {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .salary-column {
-            flex: 1;
-        }
-
-        .column-header {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 12px;
-            border-radius: 4px 4px 0 0;
-            margin-bottom: 0;
-        }
-
-        .column-header-income {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #c8e6c9;
-            border-bottom: none;
-        }
-
-        .column-header-deduction {
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
-            border-bottom: none;
-        }
-
-        .salary-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .salary-table th {
-            padding: 8px 10px;
-            text-align: left;
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            color: #555;
-        }
-
-        .salary-table th.text-right {
-            text-align: right;
-        }
-
-        .salary-table td {
-            padding: 7px 10px;
-            border: 1px solid #dee2e6;
-            font-size: 11.5px;
-        }
-
-        .salary-table .text-right {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .salary-table .total-row td {
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .total-income td {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-top: 2px solid #2e7d32 !important;
-        }
-
-        .total-deduction td {
-            background: #ffebee;
-            color: #c62828;
-            border-top: 2px solid #c62828 !important;
-        }
-
-        /* ============================================
-           BOX GAJI BERSIH
-           ============================================ */
-        .net-salary-box {
-            background: linear-gradient(135deg, #696cff 0%, #8b8eff 100%);
-            border-radius: 8px;
-            padding: 18px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .net-salary-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: rgba(255,255,255,0.85);
-            letter-spacing: 0.5px;
-        }
-
-        .net-salary-amount {
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-        }
-
-        /* ============================================
-           CATATAN
-           ============================================ */
-        .notes-section {
-            background: #fff3cd;
-            padding: 12px 15px;
-            border-left: 4px solid #ffc107;
-            margin-bottom: 20px;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .notes-section h4 {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: #856404;
-        }
-
-        .notes-section p {
-            font-size: 11px;
-            color: #856404;
-            margin: 0;
-        }
-
-        /* ============================================
-           TANDA TANGAN
-           ============================================ */
-        .signature-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 50px;
-            margin-bottom: 25px;
-        }
-
-        .signature-box {
-            text-align: center;
-            width: 200px;
-        }
-
-        .signature-box .sig-label {
-            font-size: 11px;
-            color: #666;
-            margin-bottom: 0;
-        }
-
-        .signature-line {
-            border-top: 1px solid #333;
-            margin-top: 65px;
-            padding-top: 6px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .sig-title {
-            font-size: 10px;
-            color: #888;
-            margin-top: 2px;
-        }
-
-        /* ============================================
-           FOOTER
-           ============================================ */
-        .slip-footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-            font-size: 10px;
-            color: #888;
-        }
-
-        .slip-footer p {
-            margin-bottom: 3px;
-        }
-
-        .slip-footer .footer-timestamp {
-            margin-top: 8px;
-            font-size: 9px;
-            color: #aaa;
-        }
-
-        /* ============================================
-           PRINT STYLES
-           ============================================ */
+        /* Print */
         @media print {
-            body {
-                padding: 0;
-                background: white;
-            }
-
-            .slip-container {
-                border: none;
-                box-shadow: none;
-                padding: 0;
-            }
-
-            .net-salary-box {
+            .invoice-status, .order-status, .po-status, .slip-status {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-            }
+             margin-top: 12px; }
 
-            .column-header-income,
-            .column-header-deduction,
-            .total-income td,
-            .total-deduction td,
-            .notes-section,
-            .slip-status {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            @page {
-                size: A4;
-                margin: 12mm 15mm;
-            }
+            body { padding: 0; background: white; }
+            .slip-container { border: none; box-shadow: none; padding: 0; }
+            .net-salary-box { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .column-header-income, .column-header-deduction, .total-income td, .total-deduction td, .notes-section, .slip-status {
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+             margin-top: 12px; }
+            .no-print { display: none !important; }
+            @page { size: A4; margin: 12mm 15mm; }
         }
     </style>
 </head>
 
-<body onload="window.print()">
+<body>
     <div class="slip-container">
 
-        <!-- ============================================ -->
-        <!--  HEADER PERUSAHAAN                            -->
-        <!-- ============================================ -->
-        <div class="slip-header">
-            <div class="company-info">
-                <div class="company-name">{{ template.header_nama_perusahaan }}</div>
-                <div class="company-details">
-                    {{ template.header_alamat }}<br>
-                    Telp: {{ template.header_telepon }}<br>
-                    Email: {{ template.header_email }}
-                    {% if template.tampilkan_website and template.header_website %}<br>{{ template.header_website }}{% endif %}
-                </div>
-            </div>
-            <div class="slip-title-section">
-                <h1>SLIP GAJI</h1>
-                <div class="slip-period">Periode: {{ slip.periode }}</div>
-                {% if slip.status == 'draft' %}
-                <span class="slip-status status-draft">Draft</span>
-                {% elif slip.status == 'diproses' %}
-                <span class="slip-status status-diproses">Diproses</span>
-                {% elif slip.status == 'dibayar' %}
-                <span class="slip-status status-dibayar">Dibayar</span>
-                {% endif %}
-            </div>
-        </div>
+        <!-- Header (TABLE layout) -->
+        <table class="header-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="vertical-align: top;">
+                    <div class="company-name">
+                        {% if template.tampilkan_logo and perusahaan.logo %}
+                        <img src="{{ perusahaan.logo.url }}" alt="{{ template.header_nama_perusahaan }}" class="company-logo">&nbsp;
+                        {% endif %}
+                        {{ template.header_nama_perusahaan }}
+                    </div>
+                    <div class="company-details">
+                        {{ template.header_alamat }}<br>
+                        Telp: {{ template.header_telepon }}<br>
+                        Email: {{ template.header_email }}
+                        {% if template.tampilkan_website and template.header_website %}<br>{{ template.header_website }}{% endif %}
+                    </div>
+                </td>
+                <td style="text-align: right; vertical-align: top;" class="slip-title">
+                    <h1>SLIP GAJI</h1>
+                    <div class="slip-period">Periode: {{ slip.periode }}</div>
+                    {% if slip.status == 'draft' %}
+                    <span class="slip-status status-draft">Draft</span>
+                    {% elif slip.status == 'diproses' %}
+                    <span class="slip-status status-diproses">Diproses</span>
+                    {% elif slip.status == 'dibayar' %}
+                    <span class="slip-status status-dibayar">Dibayar</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
 
-        <!-- ============================================ -->
-        <!--  INFO KARYAWAN                                -->
-        <!-- ============================================ -->
-        <div class="employee-info">
-            <div class="info-group">
-                <h3>Data Karyawan</h3>
-                <div class="info-row">
-                    <span class="info-label">Nama Karyawan:</span>
-                    <span class="info-value"><strong>{{ slip.karyawan.nama }}</strong></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">NIK:</span>
-                    <span class="info-value">{{ slip.karyawan.nik }}</span>
-                </div>
-            </div>
-            <div class="info-group">
-                <h3>Informasi Jabatan</h3>
-                <div class="info-row">
-                    <span class="info-label">Jabatan:</span>
-                    <span class="info-value">{{ slip.karyawan.jabatan.nama }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Departemen:</span>
-                    <span class="info-value">{{ slip.karyawan.jabatan.departemen.nama|default:"-" }}</span>
-                </div>
-            </div>
-        </div>
+        <!-- Info Karyawan (TABLE layout) -->
+        <table class="employee-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="info-group">
+                    <h3>Data Karyawan</h3>
+                    <div class="info-row">
+                        <span class="info-label">Nama Karyawan:</span>
+                        <span class="info-value"><strong>{{ slip.karyawan.nama }}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">NIK:</span>
+                        <span class="info-value">{{ slip.karyawan.nik }}</span>
+                    </div>
+                </td>
+                <td class="info-group">
+                    <h3>Informasi Jabatan</h3>
+                    <div class="info-row">
+                        <span class="info-label">Jabatan:</span>
+                        <span class="info-value">{{ slip.karyawan.jabatan.nama }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Departemen:</span>
+                        <span class="info-value">{{ slip.karyawan.jabatan.departemen.nama|default:"-" }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-        <!-- ============================================ -->
-        <!--  TABEL PENDAPATAN & POTONGAN                  -->
-        <!-- ============================================ -->
-        <div class="salary-tables">
-            <!-- Kolom Pendapatan -->
-            <div class="salary-column">
-                <div class="column-header column-header-income">✚ Pendapatan</div>
-                <table class="salary-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60%;">Komponen</th>
-                            <th class="text-right">Jumlah (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Gaji Pokok</td>
-                            <td class="text-right">{{ slip.gaji_pokok|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Tunjangan Jabatan</td>
-                            <td class="text-right">{{ slip.tunjangan_jabatan|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Tunjangan Makan</td>
-                            <td class="text-right">{{ slip.tunjangan_makan|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Tunjangan Transport</td>
-                            <td class="text-right">{{ slip.tunjangan_transport|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Tunjangan Lainnya</td>
-                            <td class="text-right">{{ slip.tunjangan_lainnya|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Lembur</td>
-                            <td class="text-right">{{ slip.lembur|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Bonus</td>
-                            <td class="text-right">{{ slip.bonus|floatformat:0|intcomma }}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row total-income">
-                            <td>Total Pendapatan</td>
-                            <td class="text-right">{{ slip.total_pendapatan|floatformat:0|intcomma }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+        <!-- Tabel Pendapatan & Potongan (TABLE layout) -->
+        <table class="salary-wrapper" cellpadding="0" cellspacing="0">
+            <tr>
+                <!-- Kolom Pendapatan -->
+                <td>
+                    <div class="column-header column-header-income">✚ Pendapatan</div>
+                    <table class="salary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60%;">Komponen</th>
+                                <th class="text-right">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Gaji Pokok</td><td class="text-right">{{ slip.gaji_pokok|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Tunjangan Jabatan</td><td class="text-right">{{ slip.tunjangan_jabatan|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Tunjangan Makan</td><td class="text-right">{{ slip.tunjangan_makan|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Tunjangan Transport</td><td class="text-right">{{ slip.tunjangan_transport|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Tunjangan Lainnya</td><td class="text-right">{{ slip.tunjangan_lainnya|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Lembur</td><td class="text-right">{{ slip.lembur|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Bonus</td><td class="text-right">{{ slip.bonus|floatformat:0|intcomma }}</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row total-income">
+                                <td>Total Pendapatan</td>
+                                <td class="text-right">{{ slip.total_pendapatan|floatformat:0|intcomma }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </td>
 
-            <!-- Kolom Potongan -->
-            <div class="salary-column">
-                <div class="column-header column-header-deduction">− Potongan</div>
-                <table class="salary-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60%;">Komponen</th>
-                            <th class="text-right">Jumlah (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>BPJS Kesehatan</td>
-                            <td class="text-right">{{ slip.potongan_bpjs_kesehatan|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>BPJS Ketenagakerjaan</td>
-                            <td class="text-right">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>PPh 21</td>
-                            <td class="text-right">{{ slip.potongan_pph21|floatformat:0|intcomma }}</td>
-                        </tr>
-                        <tr>
-                            <td>Potongan Lainnya</td>
-                            <td class="text-right">{{ slip.potongan_lainnya|floatformat:0|intcomma }}</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row total-deduction">
-                            <td>Total Potongan</td>
-                            <td class="text-right">{{ slip.total_potongan|floatformat:0|intcomma }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
+                <!-- Kolom Potongan -->
+                <td>
+                    <div class="column-header column-header-deduction">− Potongan</div>
+                    <table class="salary-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60%;">Komponen</th>
+                                <th class="text-right">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>BPJS Kesehatan</td><td class="text-right">{{ slip.potongan_bpjs_kesehatan|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>BPJS Ketenagakerjaan</td><td class="text-right">{{ slip.potongan_bpjs_ketenagakerjaan|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>PPh 21</td><td class="text-right">{{ slip.potongan_pph21|floatformat:0|intcomma }}</td></tr>
+                            <tr><td>Potongan Lainnya</td><td class="text-right">{{ slip.potongan_lainnya|floatformat:0|intcomma }}</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row total-deduction">
+                                <td>Total Potongan</td>
+                                <td class="text-right">{{ slip.total_potongan|floatformat:0|intcomma }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
-        <!-- ============================================ -->
-        <!--  GAJI BERSIH                                  -->
-        <!-- ============================================ -->
-        <div class="net-salary-box">
-            <span class="net-salary-label">GAJI BERSIH (Take Home Pay)</span>
-            <span class="net-salary-amount">Rp {{ slip.gaji_bersih|floatformat:0|intcomma }}</span>
-        </div>
+        <!-- Gaji Bersih -->
+        <table cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0;">
+            <tr>
+                <td bgcolor="#696cff" class="net-salary-box" style="padding: 14px 20px 8px 20px; border-radius: 8px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;">
+                    <table cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td style="font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;">GAJI BERSIH (Take Home Pay)</td>
+                            <td style="text-align: right; font-size: 22px; font-weight: 800; color: #ffffff;">Rp {{ slip.gaji_bersih|floatformat:0|intcomma }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
         <!-- Catatan -->
         {% if slip.catatan %}
@@ -540,38 +256,75 @@
         </div>
         {% endif %}
 
-        <!-- ============================================ -->
-        <!--  TANDA TANGAN                                 -->
-        <!-- ============================================ -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <p class="sig-label">{{ template.signature_kiri_label }},</p>
-                <div class="signature-line">
-                    {{ slip.karyawan.nama }}
-                </div>
-                <p class="sig-title">Karyawan</p>
-            </div>
-            <div class="signature-box">
-                <p class="sig-label">{{ template.signature_kanan_label }},</p>
-                <div class="signature-line">
-                    ________________
-                </div>
-                <p class="sig-title">{{ template.signature_kanan_label }}</p>
-            </div>
-        </div>
+        <!-- Tanda Tangan (TABLE layout) -->
+        <table class="signature-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="text-align: center; width: 200px;">
+                    <p class="sig-label">{{ template.signature_kiri_label }},</p>
+                    <div class="signature-line">{{ slip.karyawan.nama }}</div>
+                    <p class="sig-title">Karyawan</p>
+                </td>
+                <td>&nbsp;</td>
+                <td style="text-align: center; width: 200px;">
+                    <p class="sig-label">{{ template.signature_kanan_label }},</p>
+                    <div class="signature-line">________________</div>
+                    <p class="sig-title">{{ template.signature_kanan_label }}</p>
+                </td>
+            </tr>
+        </table>
 
-        <!-- ============================================ -->
-        <!--  FOOTER                                       -->
-        <!-- ============================================ -->
-        <div class="slip-footer">
-            <p>{{ template.footer_ucapan }}</p>
-            <p>{{ template.footer_keterangan }}</p>
-            <p class="footer-timestamp">
-                Dicetak pada: {% now "d F Y, H:i" %} WIB
-            </p>
-        </div>
+        <!-- Footer (TABLE layout untuk konsistensi xhtml2pdf) -->
+        <table class="footer-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <p>{{ template.footer_ucapan }}</p>
+                    <p>{{ template.footer_keterangan }}</p>
+                    <p class="footer-timestamp">
+                        Dicetak pada: {% now "d F Y, H:i" %} WIB
+                    </p>
+                </td>
+            </tr>
+        </table>
 
     </div>
+
+    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
+    <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
+        <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+            ← Kembali
+        </a>
+    </div>
+
+    <script>
+        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
+        (function() {
+            var printed = false;
+            function goBack() {
+                if (document.referrer && document.referrer !== '') { window.location.href = document.referrer; }
+                else if (window.history.length > 1) { window.history.back(); }
+                else { window.close(); }
+            }
+            function showBackButton() {
+                var wrap = document.getElementById('backBtnWrap');
+                if (wrap) wrap.style.display = 'block';
+            }
+            var backBtn = document.getElementById('backBtn');
+            if (backBtn) { backBtn.addEventListener('click', function(e) { e.preventDefault(); goBack(); }); }
+            function doPrint() {
+                if (printed) return;
+                printed = true;
+                if (typeof window.SerpApp !== 'undefined' && typeof window.SerpApp.triggerPrint === 'function') {
+                    window.SerpApp.triggerPrint();
+                    setTimeout(showBackButton, 500);
+                } else {
+                    if (typeof window.print === 'function') { try { window.print(); } catch(e) { goBack(); } }
+                }
+            }
+            if (document.readyState === 'complete') { setTimeout(doPrint, 400); }
+            else { window.addEventListener('load', function() { setTimeout(doPrint, 400); }); }
+            window.addEventListener('afterprint', function() { setTimeout(goBack, 200); });
+        })();
+    </script>
 </body>
 
 </html>

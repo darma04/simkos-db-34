@@ -1,140 +1,215 @@
-{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    BIAYA PRINT - Template Cetak Transaksi Biaya
    Template cetak A4 untuk bukti transaksi biaya.
-   Layout standalone untuk print langsung.
-   ==========================================================================
+   Layout STANDALONE (tanpa extends layout) untuk print langsung.
+   Menggunakan TABLE layout agar konsisten di browser DAN xhtml2pdf (Telegram PDF).
+
+   PENTING: Template ini TIDAK boleh extends layout_vertical.html karena
+   akan menyebabkan seluruh layout Django (sidebar, navbar) ikut ter-render
+   dan gagal di xhtml2pdf. Harus standalone.
+
+   FIX xhtml2pdf:
+   - TIDAK menggunakan box-sizing: border-box (tidak didukung xhtml2pdf)
+   - Status badge <span> diganti dengan <div> teks biasa oleh _clean_html_for_pdf
+   - Semua padding sel tabel menggunakan inline style langsung
+==========================================================================
 {% endcomment %}
-{% load static %}
 {% load currency_filters %}
-
-{% block title %}Print Transaksi Biaya - {{ transaksi.nomor_transaksi }}{% endblock title %}
-
-{% block content %}
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transaksi Biaya {{ transaksi.nomor_transaksi }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.6; color: #333; padding: 20px; }
+        /* CATATAN: Tidak pakai box-sizing:border-box agar xhtml2pdf kompatibel */
+        * { margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #333; padding: 20px; }
         .invoice-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd; }
-        .invoice-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #696cff; }
-        .company-info { flex: 1; }
+
+        .header-table { width: 100%; border-bottom: 3px solid #696cff; padding-bottom: 15px; margin-bottom: 25px; }
+        .header-table td { vertical-align: top; }
+        .company-logo { height: 26px; width: auto; vertical-align: middle; }
         .company-name { font-size: 24px; font-weight: bold; color: #696cff; margin-bottom: 5px; }
         .company-details { font-size: 11px; color: #666; line-height: 1.4; }
-        .invoice-title { text-align: right; }
-        .invoice-title h1 { font-size: 32px; color: #696cff; margin-bottom: 5px; }
+        .invoice-title h1 { font-size: 28px; color: #696cff; margin-bottom: 5px; }
         .invoice-number { font-size: 14px; color: #666; margin-bottom: 10px; }
-        .invoice-status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 11px; }
-        .status-draft { background: #e0e0e0; color: #666; }
-        .status-submitted { background: #cfe2ff; color: #084298; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-rejected { background: #f8d7da; color: #721c24; }
-        .invoice-info { display: flex; justify-content: space-between; margin-bottom: 30px; }
-        .info-section { flex: 1; }
-        .info-section h3 { font-size: 12px; color: #696cff; margin-bottom: 10px; text-transform: uppercase; }
-        .info-row { margin-bottom: 5px; }
-        .info-label { font-weight: bold; display: inline-block; width: 120px; }
-        .total-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .total-amount { font-size: 24px; font-weight: bold; color: #696cff; text-align: center; }
-        .notes { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin-bottom: 20px; }
-        .notes h4 { font-size: 12px; margin-bottom: 5px; }
-        .invoice-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 11px; color: #666; }
-        .signature-section { display: flex; justify-content: space-between; margin-top: 50px; margin-bottom: 20px; }
-        .signature-box { text-align: center; width: 200px; }
-        .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 5px; }
-        @media print { body { padding: 0; } .invoice-container { border: none; padding: 0; } @page { margin: 1cm; } }
+
+        .biaya-status { display: inline-block; padding: 6px 20px; -webkit-border-radius: 20px; border-radius: 20px; font-weight: bold; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 12px; }
+        .status-draft { background-color: #e0e0e0; color: #666; border: 1px solid #ccc; }
+        .status-submitted { background-color: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
+        .status-approved { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-rejected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .footer-table { width: 100%; border-top: 1px solid #ddd; margin-top: 10px; }
+        .footer-table td { padding-top: 25px; text-align: center; font-size: 11px; color: #666; line-height: 1.8; }
+        .footer-table p { margin: 0 0 3px 0; padding: 0; }
+        .signature-table { width: 100%; margin-top: 200px; margin-bottom: 20px; }
+        .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 5px; text-align: center; }
+
+        @media screen and (max-width: 768px) {
+            body { padding: 10px; }
+            .invoice-container { padding: 15px; }
+            .company-name { font-size: 18px; }
+            .invoice-title h1 { font-size: 22px; }
+        }
+
+        @media print {
+            .biaya-status { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { padding: 0; }
+            .invoice-container { border: none; padding: 0; }
+            .no-print { display: none !important; }
+            @page { size: A4; margin: 1cm; }
+        }
     </style>
 </head>
 
-<body onload="window.print()">
+<body>
     <div class="invoice-container">
         <!-- Header -->
-        <div class="invoice-header">
-            <div class="company-info">
-                <div class="company-name">{{ template.header_nama_perusahaan }}</div>
-                <div class="company-details">
-                    {{ template.header_alamat }}<br>
-                    Telp: {{ template.header_telepon }}<br>
-                    Email: {{ template.header_email }}
-                    {% if template.tampilkan_website and template.header_website %}<br>{{ template.header_website }}{% endif %}
-                </div>
-            </div>
-            <div class="invoice-title">
-                <h1>TRANSAKSI BIAYA</h1>
-                <div class="invoice-number">#{{ transaksi.nomor_transaksi }}</div>
-                {% if transaksi.status == 'draft' %}
-                <span class="invoice-status status-draft">DRAFT</span>
-                {% elif transaksi.status == 'submitted' %}
-                <span class="invoice-status status-submitted">DIAJUKAN</span>
-                {% elif transaksi.status == 'approved' %}
-                <span class="invoice-status status-approved">DISETUJUI</span>
-                {% elif transaksi.status == 'rejected' %}
-                <span class="invoice-status status-rejected">DITOLAK</span>
-                {% endif %}
-            </div>
-        </div>
+        <table class="header-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="vertical-align: top;">
+                    <div class="company-name">
+                        {% if template.tampilkan_logo and perusahaan.logo %}
+                        <img src="{{ perusahaan.logo.url }}" alt="{{ template.header_nama_perusahaan }}" class="company-logo">&nbsp;
+                        {% endif %}
+                        {{ template.header_nama_perusahaan }}
+                    </div>
+                    <div class="company-details">
+                        {{ template.header_alamat }}<br>
+                        Telp: {{ template.header_telepon }}<br>
+                        Email: {{ template.header_email }}
+                        {% if template.tampilkan_website and template.header_website %}<br>{{ template.header_website }}{% endif %}
+                    </div>
+                </td>
+                <td style="text-align: right; vertical-align: top;" class="invoice-title">
+                    <h1>TRANSAKSI BIAYA</h1>
+                    <div class="invoice-number">#{{ transaksi.nomor_transaksi }}</div>
+                    {% if transaksi.status == 'draft' %}
+                    <span class="biaya-status status-draft">DRAFT</span>
+                    {% elif transaksi.status == 'submitted' %}
+                    <span class="biaya-status status-submitted">DIAJUKAN</span>
+                    {% elif transaksi.status == 'approved' %}
+                    <span class="biaya-status status-approved">DISETUJUI</span>
+                    {% elif transaksi.status == 'rejected' %}
+                    <span class="biaya-status status-rejected">DITOLAK</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
 
-        <!-- Info -->
-        <div class="invoice-info">
-            <div class="info-section">
-                <h3>Informasi Transaksi</h3>
-                <div class="info-row">
-                    <span class="info-label">Tanggal:</span>
-                    <span>{{ transaksi.tanggal|date:"d F Y" }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Kategori:</span>
-                    <span>{{ transaksi.kategori.nama }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Dibuat Oleh:</span>
-                    <span>{{ transaksi.dibuat_oleh.get_full_name|default:transaksi.dibuat_oleh.username }}</span>
-                </div>
-            </div>
-        </div>
+        <!-- Info (TABLE layout dengan inline style agar xhtml2pdf render padding) -->
+        <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 25px;">
+            <tr>
+                <td style="vertical-align: top;">
+                    <div style="font-size: 12px; font-weight: bold; color: #696cff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Informasi Transaksi</div>
+                    <table cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="font-weight: bold; width: 130px; padding: 3px 0; color: #555; font-size: 12px;">Tanggal:</td>
+                            <td style="padding: 3px 0; color: #333; font-size: 12px;">{{ transaksi.tanggal|date:"d F Y" }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; width: 130px; padding: 3px 0; color: #555; font-size: 12px;">Kategori:</td>
+                            <td style="padding: 3px 0; color: #333; font-size: 12px;">{{ transaksi.kategori.nama }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; width: 130px; padding: 3px 0; color: #555; font-size: 12px;">Dibuat Oleh:</td>
+                            <td style="padding: 3px 0; color: #333; font-size: 12px;">{{ transaksi.dibuat_oleh.get_full_name|default:transaksi.dibuat_oleh.username }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
-        <!-- Total Amount -->
-        <div class="total-box">
-            <div style="text-align: center; margin-bottom: 10px; font-size: 14px; color: #666;">Total Biaya</div>
-            <div class="total-amount">{{ transaksi.jumlah|rupiah }}</div>
-        </div>
+        <!-- Total Amount (TABLE dengan bgcolor — xhtml2pdf tidak support div background) -->
+        <table cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0;">
+            <tr>
+                <td bgcolor="#f8f9fa" style="padding: 20px; text-align: center; border: 1px solid #e9ecef;">
+                    <p style="font-size: 14px; color: #666; margin: 0 0 10px 0; padding: 0;">Total Biaya</p>
+                    <p style="font-size: 24px; font-weight: bold; color: #696cff; margin: 0; padding: 0;">{{ transaksi.jumlah|rupiah }}</p>
+                </td>
+            </tr>
+        </table>
 
-        <!-- Description -->
+        <!-- Description (TABLE dengan bgcolor — xhtml2pdf tidak support div border-left) -->
         {% if transaksi.deskripsi %}
-        <div class="notes">
-            <h4>Deskripsi:</h4>
-            <p>{{ transaksi.deskripsi }}</p>
-        </div>
+        <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 20px;">
+            <tr>
+                <td bgcolor="#fff3cd" style="padding: 12px 15px; border-left: 4px solid #ffc107;">
+                    <p style="font-size: 12px; font-weight: bold; color: #856404; margin-bottom: 5px; padding: 0;">Deskripsi:</p>
+                    <p style="font-size: 11px; color: #856404; margin: 0; padding: 0;">{{ transaksi.deskripsi }}</p>
+                </td>
+            </tr>
+        </table>
         {% endif %}
 
         <!-- Signature -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-line">
-                    {{ template.signature_kiri_label }}
-                </div>
-            </div>
-            <div class="signature-box">
-                <div class="signature-line">
-                    {{ template.signature_kanan_label }}
-                </div>
-            </div>
-        </div>
+        <table class="signature-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="text-align: center; width: 200px;">
+                    <div class="signature-line">{{ template.signature_kiri_label }}</div>
+                </td>
+                <td>&nbsp;</td>
+                <td style="text-align: center; width: 200px;">
+                    <div class="signature-line">{{ template.signature_kanan_label }}</div>
+                </td>
+            </tr>
+        </table>
 
-        <!-- Footer -->
-        <div class="invoice-footer">
-            <p>{{ template.footer_ucapan }}</p>
-            <p>{{ template.footer_keterangan }}</p>
-            <p style="margin-top: 10px; font-size: 10px;">
-                Dicetak pada: {{ "now"|date:"d F Y, H:i" }} WIB
-            </p>
-        </div>
+        <!-- Footer (TABLE layout untuk konsistensi xhtml2pdf) -->
+        <table class="footer-table" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <p>{{ template.footer_ucapan }}</p>
+                    <p>{{ template.footer_keterangan }}</p>
+                    <p style="margin-top: 8px; font-size: 10px; color: #999; padding: 0;">
+                        Dicetak pada: {% now "d F Y, H:i" %} WIB
+                    </p>
+                </td>
+            </tr>
+        </table>
     </div>
+
+    <!-- Tombol Kembali (ditampilkan setelah native Android print dialog) -->
+    <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
+        <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+            ← Kembali
+        </a>
+    </div>
+
+    <script>
+        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
+        (function() {
+            var printed = false;
+            function goBack() {
+                if (document.referrer && document.referrer !== '') { window.location.href = document.referrer; }
+                else if (window.history.length > 1) { window.history.back(); }
+                else { window.close(); }
+            }
+            function showBackButton() {
+                var wrap = document.getElementById('backBtnWrap');
+                if (wrap) wrap.style.display = 'block';
+            }
+            var backBtn = document.getElementById('backBtn');
+            if (backBtn) { backBtn.addEventListener('click', function(e) { e.preventDefault(); goBack(); }); }
+            function doPrint() {
+                if (printed) return;
+                printed = true;
+                if (typeof window.SerpApp !== 'undefined' && typeof window.SerpApp.triggerPrint === 'function') {
+                    window.SerpApp.triggerPrint();
+                    setTimeout(showBackButton, 500);
+                } else {
+                    if (typeof window.print === 'function') { try { window.print(); } catch(e) { goBack(); } }
+                }
+            }
+            if (document.readyState === 'complete') { setTimeout(doPrint, 400); }
+            else { window.addEventListener('load', function() { setTimeout(doPrint, 400); }); }
+            window.addEventListener('afterprint', function() { setTimeout(goBack, 200); });
+        })();
+    </script>
 </body>
+
 </html>
-{% endblock content %}

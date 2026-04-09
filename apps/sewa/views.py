@@ -162,6 +162,13 @@ class TagihanSewaCreateView(CreateView):
                 dicatat_oleh=self.request.user,
             )
 
+        # Kirim notifikasi Telegram
+        try:
+            from apps.automation.signals import kirim_notifikasi_tagihan
+            kirim_notifikasi_tagihan(tagihan)
+        except Exception:
+            pass  # Jangan block transaksi jika Telegram gagal
+
         messages.success(self.request, 'Tagihan berhasil dibuat')
         return super().form_valid(form)
 
@@ -272,9 +279,18 @@ class PembayaranSewaCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        """Simpan pembayaran baru."""
+        """Simpan pembayaran baru dan kirim notifikasi Telegram."""
+        response = super().form_valid(form)
+
+        # Kirim notifikasi Telegram
+        try:
+            from apps.automation.signals import kirim_notifikasi_kwitansi
+            kirim_notifikasi_kwitansi(self.object)
+        except Exception:
+            pass  # Jangan block transaksi jika Telegram gagal
+
         messages.success(self.request, 'Pembayaran berhasil dicatat')
-        return super().form_valid(form)
+        return response
 
 
 class PembayaranSewaDeleteView(DeleteView):
@@ -315,6 +331,12 @@ class TagihanCetakView(DetailView):
         context['kamar'] = tagihan.kontrak.kamar
         context['properti'] = tagihan.kontrak.kamar.properti
         context['pembayaran_list'] = tagihan.pembayaran.all().order_by('tanggal_bayar')
+        # Data perusahaan untuk logo di header cetak
+        try:
+            from apps.pengaturan.models import PengaturanPerusahaan
+            context['perusahaan'] = PengaturanPerusahaan.load()
+        except Exception:
+            pass
         return context
 
 
@@ -353,5 +375,11 @@ class PembayaranCetakView(DetailView):
         context['penyewa'] = p.tagihan.kontrak.penyewa
         context['kamar'] = p.tagihan.kontrak.kamar
         context['properti'] = p.tagihan.kontrak.kamar.properti
+        # Data perusahaan untuk logo di header cetak
+        try:
+            from apps.pengaturan.models import PengaturanPerusahaan
+            context['perusahaan'] = PengaturanPerusahaan.load()
+        except Exception:
+            pass
         return context
 

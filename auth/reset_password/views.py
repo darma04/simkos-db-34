@@ -27,8 +27,10 @@
 
 from django.shortcuts import render, redirect      # Fungsi render dan redirect
 from django.contrib import messages                 # Framework pesan flash
+from django.utils.decorators import method_decorator  # Decorator untuk CBV
 from auth.models import Profile                     # Model Profile
 from auth.views import AuthView                     # Base class autentikasi
+from auth.rate_limit import rate_limit_view         # Rate limit decorator
 from django.contrib.auth import authenticate, login  # Autentikasi Django
 from datetime import datetime                       # Modul waktu
 from django.utils import timezone                   # Timezone-aware datetime Django
@@ -44,6 +46,10 @@ class ResetPasswordView(AuthView):
     Method:
     - get(token): Validasi token dan tampilkan form password baru
     - post(token): Proses perubahan password
+
+    Rate Limit:
+    - POST dibatasi 5 percobaan per 10 menit per IP
+    - Mencegah brute-force token reset password
     """
 
     def get(self, request, token):
@@ -83,6 +89,7 @@ class ResetPasswordView(AuthView):
             messages.error(request, "Token tidak valid atau sudah kedaluwarsa.")
             return redirect("forgot-password")
 
+    @method_decorator(rate_limit_view(max_attempts=5, period=600, redirect_url='forgot-password'))
     def post(self, request, token):
         """
         Proses perubahan password (POST).

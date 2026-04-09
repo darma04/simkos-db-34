@@ -79,6 +79,8 @@ class PengaturanTelegramView(ReadPermissionMixin, TemplateView):
         pengaturan.notif_kwitansi = request.POST.get('notif_kwitansi') == 'on'
         pengaturan.notif_biaya = request.POST.get('notif_biaya') == 'on'
         pengaturan.notif_gaji = request.POST.get('notif_gaji') == 'on'
+        pengaturan.kirim_pdf = request.POST.get('kirim_pdf') == 'on'
+        pengaturan.system_prompt_bot = request.POST.get('system_prompt_bot', '').strip()
         pengaturan.save()
 
         messages.success(request, 'Pengaturan Telegram berhasil disimpan!')
@@ -340,3 +342,136 @@ def reset_template(request, pk):
 
     messages.success(request, f'Template "{template.nama}" berhasil direset ke default!')
     return redirect('automation:template_pesan_list')
+
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║          TELEGRAM WEBHOOK & AI BOT                            ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+from django.views.decorators.csrf import csrf_exempt
+
+
+@csrf_exempt
+def telegram_webhook(request):
+    """
+    Endpoint webhook yang dipanggil oleh Telegram saat ada pesan masuk.
+    URL: POST /automation/telegram/webhook/
+
+    Keamanan:
+    - csrf_exempt karena Telegram mengirim POST tanpa CSRF token
+    - Validasi secret token via header X-Telegram-Bot-Api-Secret-Token
+    - Menggunakan thread pool (max 5 worker) untuk mencegah thread leak
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'ok'})
+
+    try:
+        # ── VALIDASI SECRET TOKEN ──────────────────────────────
+        # Telegram mengirim header ini jika secret_token di-set saat setWebhook
+        # Ini mencegah siapapun mengirim request palsu ke endpoint ini
+        pengaturan = PengaturanTelegram.load()
+        expected_token = _generate_webhook_secret(pengaturan.bot_token)
+
+        received_token = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        if expected_token and received_token != expected_token:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[Webhook] Request ditolak — secret token tidak valid")
+            return JsonResponse({'status': 'unauthorized'}, status=403)
+
+        body = json.loads(request.body.decode('utf-8'))
+
+        # ── PROSES VIA THREAD POOL ─────────────────────────────
+        # Gunakan thread pool dari telegram_bot (max 5 worker)
+        # agar tidak terjadi thread leak saat banyak request masuk
+        from .telegram_bot import handle_update, _executor
+        try:
+            _executor.submit(handle_update, body)
+        except RuntimeError:
+            # Thread pool sudah shutdown — proses langsung
+            handle_update(body)
+
+        return JsonResponse({'status': 'ok'})
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"[Webhook] Error: {e}", exc_info=True)
+        return JsonResponse({'status': 'error'}, status=500)
+
+
+def _generate_webhook_secret(bot_token):
+    """
+    Generate secret token dari bot_token untuk validasi webhook.
+    Menggunakan hash SHA-256 agar token asli tidak terexpose.
+    Secret ini harus di-set saat memanggil setWebhook API.
+    """
+    if not bot_token:
+        return ''
+    import hashlib
+    return hashlib.sha256(f"simkos_webhook_{bot_token}".encode()).hexdigest()[:32]
+
+
+@login_required
+def set_webhook(request):
+    """
+    Mendaftarkan webhook URL ke Telegram Bot API.
+    URL: POST /automation/telegram/set-webhook/
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+
+    if not has_permission(request.user, 'update', 'automation'):
+        return JsonResponse({'success': False, 'message': 'Anda tidak memiliki akses.'}, status=403)
+
+    import urllib.request
+    import urllib.error
+    import ssl
+
+    pengaturan = PengaturanTelegram.load()
+
+    if not pengaturan.bot_token:
+        return JsonResponse({
+            'success': False,
+            'message': 'Bot Token harus diisi terlebih dahulu!'
+        })
+
+    webhook_url = request.POST.get('webhook_url', '').strip()
+    if not webhook_url:
+        webhook_url = f"https://simkos.serpgroup.cloud/automation/telegram/webhook/"
+
+    bot_token = pengaturan.bot_token.strip()
+    url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
+
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    try:
+        import urllib.parse
+        # Kirim secret_token agar Telegram menyertakannya di setiap webhook request
+        secret_token = _generate_webhook_secret(bot_token)
+        params = {'url': webhook_url, 'secret_token': secret_token}
+        data = urllib.parse.urlencode(params).encode('utf-8')
+        req = urllib.request.Request(url, data=data, method='POST')
+        req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+
+        with urllib.request.urlopen(req, timeout=15, context=ssl_context) as response:
+            result = json.loads(response.read().decode('utf-8'))
+
+        if result.get('ok'):
+            return JsonResponse({
+                'success': True,
+                'message': f'Webhook berhasil terdaftar: {webhook_url}'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': f'Gagal: {result.get("description", "Unknown error")}'
+            })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        })

@@ -85,8 +85,9 @@
     <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-4">
+            <!-- Baris 1: Filter Inputs -->
+            <form id="filterForm" method="get" class="row g-3">
+                <div class="col-md-3">
                     <label class="form-label">Jenis Transaksi</label>
                     <select class="form-select" name="jenis">
                         <option value="">Semua Jenis</option>
@@ -96,7 +97,7 @@
                         <option value="biaya" {% if jenis_filter == 'biaya' %}selected{% endif %}>Transaksi Biaya</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Status</label>
                     <select class="form-select" name="status">
                         <option value="">Semua Status</option>
@@ -104,18 +105,11 @@
                         <option value="gagal" {% if status_filter == 'gagal' %}selected{% endif %}>Gagal</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
-                        </button>
-                        <a href="{% url 'automation:log_notifikasi' %}" class="btn btn-label-secondary">
-                            <i class="ri-refresh-line me-1"></i>Reset
-                        </a>
-                    </div>
-                </div>
+                <div class="col-md-3"></div>
+                <div class="col-md-3"></div>
             </form>
-            <!-- Baris kedua: Pilih Kolom -->
+
+            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -164,6 +158,17 @@
                         </div>
                     </div>
                     <small class="text-muted d-block mt-1">Klik untuk memilih kolom</small>
+                </div>
+                <div class="col-md-6"></div>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2">
+                        <button type="submit" form="filterForm" class="btn btn-primary">
+                            <i class="ri-filter-3-line me-1"></i>Terapkan Filter
+                        </button>
+                        <a href="{% url 'automation:log_notifikasi' %}" class="btn btn-label-secondary">
+                            <i class="ri-refresh-line me-1"></i>Reset
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -29,9 +29,11 @@ from django.shortcuts import redirect          # Fungsi redirect
 from django.contrib.auth.models import User     # Model User bawaan Django
 from django.contrib import messages             # Framework pesan flash
 from django.conf import settings                # Akses pengaturan Django
+from django.utils.decorators import method_decorator  # Decorator untuk CBV
 from auth.helpers import send_password_reset_email  # Fungsi kirim email reset
 from auth.models import Profile                 # Model Profile
 from auth.views import AuthView                 # Base class autentikasi
+from auth.rate_limit import rate_limit_view     # Rate limit decorator
 from datetime import timedelta, datetime        # Modul untuk kalkulasi waktu
 import uuid                                    # Modul generate token unik
 
@@ -43,6 +45,10 @@ class ForgetPasswordView(AuthView):
     Method:
     - get(): Tampilkan form input email
     - post(): Proses request reset password
+
+    Rate Limit:
+    - POST dibatasi 3 percobaan per 10 menit per IP
+    - Mencegah spam pengiriman email reset password
     """
 
     def get(self, request):
@@ -55,6 +61,7 @@ class ForgetPasswordView(AuthView):
             return redirect("dashboard:index")
         return super().get(request)
 
+    @method_decorator(rate_limit_view(max_attempts=3, period=600, redirect_url='forgot-password'))
     def post(self, request):
         """
         Proses request reset password (POST).

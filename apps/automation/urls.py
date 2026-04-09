@@ -38,4 +38,8 @@ urlpatterns = [
 
     # ── Log Notifikasi ───────────────────────────────────────
     path('log/', views.LogNotifikasiView.as_view(), name='log_notifikasi'),
+
+    # ── Telegram Webhook (AI Bot) ─────────────────────────
+    path('telegram/webhook/', views.telegram_webhook, name='telegram_webhook'),
+    path('telegram/set-webhook/', views.set_webhook, name='set_webhook'),
 ]
