@@ -61,6 +61,7 @@
         .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 5px; text-align: center; }
 
         /* Footer */
+<<<<<<< HEAD
         .footer-table { width: 100%; border-top: 1px solid #ddd; margin-top: 10px; }
         .footer-table td { padding-top: 25px; text-align: center; font-size: 11px; color: #666; line-height: 1.8; }
         .footer-table p { margin: 0 0 3px 0; }
@@ -77,6 +78,18 @@
             .signature-table td { width: 120px; }
             .signature-line { margin-top: 40px; }
         }
+=======
+        .invoice-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+        }
+
+
+>>>>>>> 0ff3885ff9fd8ccf5dfad9f73e64fc4f9c716d44
 
         /* Print Styles */
         @media print {
@@ -96,16 +109,27 @@
                 max-width: 100%;
             }
 
+<<<<<<< HEAD
             .no-print {
                 display: none !important;
             }
 
             @page { size: A4; margin: 1cm; }
+=======
+            @page {
+                margin: 1cm;
+            }
+>>>>>>> 0ff3885ff9fd8ccf5dfad9f73e64fc4f9c716d44
         }
     </style>
 </head>
 
+<<<<<<< HEAD
 <body>
+=======
+<body onload="window.print()">
+
+>>>>>>> 0ff3885ff9fd8ccf5dfad9f73e64fc4f9c716d44
     <div class="invoice-container">
         <!-- Header (TABLE layout) -->
         <table class="header-table" cellpadding="0" cellspacing="0">
