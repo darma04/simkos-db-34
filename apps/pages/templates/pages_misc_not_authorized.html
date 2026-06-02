@@ -19,9 +19,13 @@
   <div class="d-flex justify-content-center mt-5">
     <img src="{% static 'img/illustrations/misc-not-authorized-object.png' %}" alt="misc-not-authorized"
       class="img-fluid misc-object d-none d-lg-inline-block" width="190">
-    <img src="{% static 'img/illustrations/misc-bg-' %}{{ COOKIES.style|default:style }}.png" alt="misc-not-authorized"
+    {% if pengaturan.misc_background_image %}
+    <img src="{{ pengaturan.misc_background_image.url }}" alt="misc-not-authorized-bg" class="misc-bg d-none d-lg-inline-block" style="position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; inset-block-end: 0 !important; inline-size: 100% !important; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1;">
+    {% else %}
+    <img src="{% static 'img/illustrations/misc-bg-' %}{{ COOKIES.style|default:'light' }}.png" alt="misc-not-authorized"
       class="misc-bg d-none d-lg-inline-block" data-app-light-img="illustrations/misc-bg-light.png"
       data-app-dark-img="illustrations/misc-bg-dark.png">
+    {% endif %}
     <div class="d-flex flex-column align-items-center">
       <img src="{% static 'img/illustrations/misc-not-authorized-illustration.png' %}" alt="misc-not-authorized"
         class="img-fluid z-1" width="160">

@@ -28,7 +28,7 @@
             </h4>
             <p class="mb-0 text-muted">Each category includes permissions for modules configured in the system.</p>
         </div>
-        {% if user_role == 'SUPERUSER' %}
+        {% if can_create.access_control %}
         <div>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPermissionModal">
                 <i class="ri-add-line me-2"></i>Tambah Permission

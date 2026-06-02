@@ -57,14 +57,25 @@ class LoginView(AuthView):
         Logika:
         - Jika user sudah login (is_authenticated) → redirect ke dashboard
         - Jika belum login → render form login
+        - Force rotate CSRF token agar tidak ada duplicate cookie
         """
         if request.user.is_authenticated:
-            # User sudah login → redirect ke dashboard, tidak perlu login lagi
             return redirect("dashboard:index")
 
-        # User belum login → tampilkan halaman login
-        # super().get() memanggil TemplateView.get() yang me-render template
-        return super().get(request)
+        from django.middleware.csrf import rotate_token
+        rotate_token(request)
+
+        response = super().get(request)
+
+        from django.conf import settings
+        cookie_name = getattr(settings, 'CSRF_COOKIE_NAME', 'csrftoken')
+        response.delete_cookie(cookie_name, path='/')
+        response.delete_cookie(cookie_name, path='/login/')
+        response.delete_cookie(cookie_name, path='/login')
+        if cookie_name != 'csrftoken':
+            response.delete_cookie('csrftoken', path='/')
+
+        return response
 
     @method_decorator(rate_limit_view(max_attempts=5, period=300, redirect_url='login'))
     def post(self, request):

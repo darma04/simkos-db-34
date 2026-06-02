@@ -19,6 +19,7 @@
  - web_project/template_helpers/theme.py → TemplateHelper untuk set layout
 ==========================================================================
 """
+from django.shortcuts import redirect
 from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from web_project.template_helpers.theme import TemplateHelper
@@ -30,6 +31,23 @@ class MiscPagesView(TemplateView):
     Template ditentukan via parameter di urls.py, bukan di sini.
     Menggunakan layout_blank.html (halaman tanpa sidebar/navbar).
     """
+    def get(self, request, *args, **kwargs):
+        if self.template_name == 'pages_misc_under_maintenance.html':
+            from apps.core.license_models import LicenseConfig
+            try:
+                from apps.pengaturan.models import PengaturanPerusahaan
+                pengaturan = PengaturanPerusahaan.load()
+                local_maintenance = getattr(pengaturan, 'maintenance_mode', False)
+            except Exception:
+                local_maintenance = False
+                
+            config = LicenseConfig.get_config()
+            # Jika user terlanjur mendarat di halaman perbaikan, tapi sekarang Maintenance Mode (baik remote CLS maupun lokal) ternyata SUDAH DIMATIKAN
+            if not config.is_maintenance and not local_maintenance:
+                return redirect('/')
+                
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         # Inisialisasi layout global (tema, warna, dll)
         """Menambahkan data konteks tambahan ke template."""
@@ -41,5 +59,13 @@ class MiscPagesView(TemplateView):
                 "layout_path": TemplateHelper.set_layout("layout_blank.html", context),
             }
         )
+
+        # Load config lisensi
+        from apps.core.license_models import LicenseConfig
+        try:
+            lc = LicenseConfig.get_config()
+            context['license_config'] = lc
+        except Exception:
+            context['license_config'] = None
 
         return context

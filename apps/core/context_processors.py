@@ -125,6 +125,11 @@ class AccessibleSubsChecker:
     untuk modul yang sama dalam 1 request.
     """
 
+    # Mapping slug menu → kode modul database (sama dengan PermissionChecker)
+    SLUG_TO_MODULE = {
+        'users': 'user_management',
+    }
+
     def __init__(self, user):
         """
         Inisialisasi checker.
@@ -151,6 +156,9 @@ class AccessibleSubsChecker:
         """
         # Normalisasi nama modul
         normalized = module.replace('-', '_').lower()
+
+        # Terapkan slug→module mapping jika ada
+        normalized = self.SLUG_TO_MODULE.get(normalized, normalized)
 
         # Cek cache dulu
         if normalized not in self._cache:

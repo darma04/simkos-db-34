@@ -15,6 +15,28 @@
         <span class="text-muted fw-light">Sewa / Kontrak /</span> {{ title|default:"Buat Kontrak Sewa" }}
     </h4>
 
+    
+    <!-- UI Gating: Read-Only Alert -->
+    {% if is_edit and not can_edit.sewa.kontrak %}
+    <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
+        <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
+        <p class="mb-0">Anda hanya memiliki akses untuk melihat form ini. Field input telah dinonaktifkan.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            const saveBtns = document.querySelectorAll('button[type="submit"]');
+            saveBtns.forEach(btn => {
+                btn.style.display = 'none';
+            });
+        });
+    </script>
+    {% endif %}
+
     <div class="row">
         <div class="col-xl-8">
             <div class="card mb-4">

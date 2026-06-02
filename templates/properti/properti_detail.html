@@ -211,8 +211,12 @@
             <h4 class="mb-0"><i class="ri-building-2-line me-2 text-primary"></i>{{ properti.nama }}</h4>
         </div>
         <div class="d-flex gap-2">
+            {% if can_edit.properti %}
             <a href="{% url 'properti:properti_edit' properti.pk %}" class="btn btn-primary"><i class="ri-edit-line me-1"></i>Edit</a>
+            {% endif %}
+            {% if can_create.properti %}
             <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createKamarModal"><i class="ri-add-line me-1"></i>Tambah Kamar</button>
+            {% endif %}
         </div>
     </div>
 
@@ -327,8 +331,12 @@
                          style="left:{{ k.pos_x }}px; top:{{ k.pos_y }}px; width:{{ k.width|default:160 }}px; height:{{ k.height|default:130 }}px;">
 
                         <div class="room-actions">
+                            {% if can_edit.properti %}
                             <button class="btn-icon-xs text-primary" onclick="editKamar({{ k.pk }})" title="Edit"><i class="ri-edit-line"></i></button>
+                            {% endif %}
+                            {% if can_delete.properti %}
                             <button class="btn-icon-xs text-danger" onclick="deleteKamar({{ k.pk }},'{{ k.nomor_kamar }}')" title="Hapus"><i class="ri-delete-bin-line"></i></button>
+                            {% endif %}
                         </div>
 
                         <div class="room-nomor"><i class="ri-door-open-line" style="font-size:11px;"></i> {{ k.nomor_kamar }}</div>
@@ -350,7 +358,9 @@
             <div class="text-center py-5 text-muted">
                 <i class="ri-home-line ri-3x d-block mb-3"></i>
                 <p class="mb-2">Belum ada kamar terdaftar</p>
+                {% if can_create.properti %}
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createKamarModal"><i class="ri-add-line me-1"></i>Tambah Kamar</button>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -360,7 +370,9 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-door-open-line me-2"></i>Daftar Kamar</h5>
+            {% if can_create.properti %}
             <button class="btn btn-sm btn-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#createKamarModal"><i class="ri-add-line me-1"></i>Tambah</button>
+            {% endif %}
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -391,14 +403,22 @@
                             {% else %}<span class="badge bg-label-danger rounded-pill">Perbaikan</span>{% endif %}
                         </td>
                         <td>
+                            {% if can_edit.properti or can_delete.properti %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                                 <div class="dropdown-menu">
+                                    {% if can_edit.properti %}
                                     <a class="dropdown-item" href="javascript:void(0);" onclick="editKamar({{ k.pk }})"><i class="ri-edit-line me-2"></i>Edit</a>
+                                    {% endif %}
+                                    {% if can_delete.properti %}
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="deleteKamar({{ k.pk }},'{{ k.nomor_kamar }}')"><i class="ri-delete-bin-line me-2"></i>Hapus</a>
+                                    {% endif %}
                                 </div>
                             </div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

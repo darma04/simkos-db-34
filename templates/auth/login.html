@@ -50,13 +50,23 @@
   <div class="authentication-inner row m-0">
     {# ── Ilustrasi Kiri (hanya tampil di desktop ≥ lg) ── #}
     <div class="d-none d-lg-flex col-lg-7 col-xl-8 align-items-center justify-content-center p-12 pb-2">
-      <img src="{% static 'img/illustrations/auth-login-illustration-' %}{{ COOKIES.style|default:style }}.png"
+      {% if pengaturan.auth_image %}
+      <img src="{{ pengaturan.auth_image.url }}"
+        class="auth-cover-illustration" alt="auth-illustration" style="z-index: 1; width: 50vw !important; max-inline-size: 100% !important;" />
+      {% else %}
+      <img src="{% static 'img/illustrations/auth-login-illustration-' %}{{ COOKIES.style|default:'light' }}.png"
         class="auth-cover-illustration w-100" alt="auth-illustration"
         data-app-light-img="illustrations/auth-login-illustration-light.png"
-        data-app-dark-img="illustrations/auth-login-illustration-dark.png" />
-      <img src="{% static 'img/illustrations/auth-cover-login-mask-' %}{{ COOKIES.style|default:style }}.png"
+        data-app-dark-img="illustrations/auth-login-illustration-dark.png" style="z-index: 1;" />
+      {% endif %}
+      {% if pengaturan.auth_background_image %}
+      <img src="{{ pengaturan.auth_background_image.url }}"
+        class="authentication-image" alt="mask" style="position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; inset-block-end: 0 !important; inline-size: 100% !important; width: 100% !important; height: 100% !important; object-fit: cover !important;" />
+      {% else %}
+      <img src="{% static 'img/illustrations/auth-cover-login-mask-' %}{{ COOKIES.style|default:'light' }}.png"
         class="authentication-image" alt="mask" data-app-light-img="illustrations/auth-cover-login-mask-light.png"
         data-app-dark-img="illustrations/auth-cover-login-mask-dark.png" />
+      {% endif %}
     </div>
 
     {# ── Form Login (kolom kanan) ── #}

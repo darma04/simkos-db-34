@@ -39,6 +39,20 @@
               Lisensi Anda telah kedaluwarsa, diblokir, atau perangkat tidak terdaftar. Silakan hubungi admin atau masukkan kunci baru.
             </div>
           </div>
+          {% elif error_message == 'force_update' %}
+          <div class="alert alert-primary d-flex flex-column align-items-center justify-content-center text-center p-4 mb-4" role="alert">
+            <i class="ri-upload-cloud-2-line mb-3" style="font-size: 3rem; color: #696cff;"></i>
+            <h5 class="fw-bold mb-2">Update Versi Diwajibkan!</h5>
+            <p class="mb-3">Versi aplikasi saat ini wajib diperbarui ke <strong>{{ config.min_app_version }}</strong>. {{ config.maintenance_message }}</p>
+            {% if config.force_update_url %}
+            <a href="{{ config.force_update_url }}" target="_blank" class="btn btn-primary d-block w-100 mb-2">
+                <i class="ri-download-cloud-line me-2"></i>Update Sekarang
+            </a>
+            <small class="text-muted">Hubungi pengembang untuk proses update agar dapat menggunakan aplikasi kembali.</small>
+            {% endif %}
+          </div>
+          <!-- Menyembunyikan form lisensi biasa jika force_update mendominasi! -->
+          <div style="display: none;">
           {% endif %}
 
           <form method="POST" action="{% url 'license_activation' %}">
@@ -138,6 +152,10 @@
           </div>
           {% endif %}
 
+          {% if error_message == 'force_update' %}
+          </div> <!-- Tutup hide form -->
+          {% endif %}
+          
         </div>
       </div>
     </div>

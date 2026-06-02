@@ -606,10 +606,10 @@ class Absensi(models.Model):
         related_name='absensi_set',        # karyawan.absensi_set.all()
         verbose_name="Karyawan"
     )
-    tanggal = models.DateField(verbose_name="Tanggal")
+    tanggal = models.DateField(verbose_name="Tanggal", db_index=True)
     jam_masuk = models.TimeField(blank=True, null=True, verbose_name="Jam Masuk")
     jam_keluar = models.TimeField(blank=True, null=True, verbose_name="Jam Keluar")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='hadir', verbose_name="Status")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='hadir', verbose_name="Status", db_index=True)
 
     # Face recognition — persentase kemiripan wajah
     persentase_kemiripan = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Persentase Kemiripan")
@@ -724,8 +724,18 @@ class Penggajian(models.Model):
     gaji_bersih = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Gaji Bersih")
 
     # ===== STATUS & TRACKING =====
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status", db_index=True)
     tanggal_bayar = models.DateField(blank=True, null=True, verbose_name="Tanggal Bayar")
+
+    # Metode pembayaran gaji — kode dari MetodePembayaran (Pengaturan)
+    # Wajib diisi saat status diubah ke 'dibayar' agar saldo metode pembayaran berkurang
+    metode_pembayaran = models.CharField(
+        max_length=50,
+        blank=True, null=True,
+        verbose_name="Metode Pembayaran",
+        help_text="Wajib diisi saat status 'dibayar' agar saldo terhitung dengan benar"
+    )
+
     catatan = models.TextField(blank=True, null=True, verbose_name="Catatan")
     dibuat_oleh = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='penggajian_dibuat')
     dibuat_pada = models.DateTimeField(auto_now_add=True)
@@ -808,6 +818,21 @@ class Penggajian(models.Model):
         self.gaji_bersih = self.total_pendapatan - self.total_potongan
 
     @property
+    def total_tunjangan(self):
+        """
+        Property untuk menghitung total tunjangan (semua komponen selain gaji pokok).
+        Total Tunjangan = Tunjangan Jabatan + Makan + Transport + Lainnya + Lembur + Bonus
+        """
+        return (
+            self.tunjangan_jabatan +
+            self.tunjangan_makan +
+            self.tunjangan_transport +
+            self.tunjangan_lainnya +
+            self.lembur +
+            self.bonus
+        )
+
+    @property
     def periode(self):
         """
         Property untuk mendapatkan nama periode gaji dalam format yang mudah dibaca.
@@ -819,7 +844,12 @@ class Penggajian(models.Model):
 
         Return: String — contoh 'Januari 2024', 'Desember 2025'
         """
+        if not self.periode_bulan or not self.periode_tahun:
+            return '-'
         # Index 0 dikosongkan ('') karena bulan dimulai dari 1
         bulan_names = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-        return f"{bulan_names[self.periode_bulan]} {self.periode_tahun}"
+        try:
+            return f"{bulan_names[self.periode_bulan]} {self.periode_tahun}"
+        except (IndexError, TypeError):
+            return f"{self.periode_bulan}/{self.periode_tahun}"

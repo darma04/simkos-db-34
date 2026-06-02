@@ -21,6 +21,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
+from django.http import JsonResponse
 
 from .license_models import LicenseConfig, generate_hardware_id
 
@@ -44,8 +45,11 @@ def license_activation_view(request):
 
     if request.method == 'POST':
         license_key = request.POST.get('license_key', '').strip()
+        # Jika user mengisi url di form, gunakan itu. Jika tidak, ambil dari setting, jika tidak ada, gunakan dari config/default.
         cls_url = request.POST.get('cls_url', '').strip()
-
+        if not cls_url:
+            cls_url = config.cls_server_url if config.cls_server_url else getattr(settings, 'LICENSE_SERVER_URL', "https://cls.serpgroup.cloud")
+        
         if not license_key:
             messages.error(request, 'Kunci lisensi wajib diisi!')
             return render(request, 'license/activation.html', {
@@ -88,6 +92,35 @@ def license_status_view(request):
     return render(request, 'license/status.html', {'config': config})
 
 
+def license_ping_view(request):
+    """
+    Endpoint ringan untuk mengecek status maintenance dan aktivasi secara realtime via AJAX.
+    Endpoint ini harus dikecualikan dari middleware pemblokir.
+    """
+    config = LicenseConfig.get_config()
+    
+    # Cek maintenance lokal
+    try:
+        from apps.pengaturan.models import PengaturanPerusahaan
+        pengaturan = PengaturanPerusahaan.load()
+        local_maintenance = getattr(pengaturan, 'maintenance_mode', False)
+    except Exception:
+        local_maintenance = False
+
+    # Superuser kebal dari local maintenance
+    is_superuser = request.user.is_authenticated and request.user.is_superuser
+    if is_superuser:
+        local_maintenance = False
+
+    is_maintenance_mode = config.is_maintenance or local_maintenance
+
+    return JsonResponse({
+        'is_activated': config.is_activated,
+        'is_maintenance_mode': bool(is_maintenance_mode)
+    })
+
+
+
 def _activate_with_cls(config, license_key, hardware_id):
     """
     Mengirim request aktivasi ke Central License Server.
@@ -95,7 +128,7 @@ def _activate_with_cls(config, license_key, hardware_id):
     Returns:
         tuple: (success: bool, message: str)
     """
-    cls_url = getattr(settings, 'LICENSE_SERVER_URL', config.cls_server_url)
+    cls_url = config.cls_server_url if config.cls_server_url else getattr(settings, 'LICENSE_SERVER_URL', "https://cls.serpgroup.cloud")
     activate_url = f"{cls_url.rstrip('/')}/api/v1/license/activate/"
 
     payload = json.dumps({
@@ -123,6 +156,10 @@ def _activate_with_cls(config, license_key, hardware_id):
                     expires_at=resp_data.get('expires_at'),
                     product_name=resp_data.get('product_name'),
                     client_name=resp_data.get('client_name'),
+                    is_maintenance=resp_data.get('is_maintenance', False),
+                    maintenance_message=resp_data.get('maintenance_message'),
+                    min_app_version=resp_data.get('min_app_version', 'v1.0'),
+                    force_update_url=resp_data.get('force_update_url')
                 )
                 expires_info = ""
                 if resp_data.get('expires_at'):

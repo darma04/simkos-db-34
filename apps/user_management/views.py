@@ -130,7 +130,12 @@ class UserAddView(CreatePermissionMixin, CreateView):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         context['title'] = 'Tambah User Baru'
-        context['role_choices'] = RolePermission.get_all_roles()
+        # Filter SUPERUSER dari dropdown jika pembuka form bukan SUPERUSER
+        all_roles = RolePermission.get_all_roles()
+        is_my_role_super = hasattr(self.request.user, 'profile') and self.request.user.profile.role == 'SUPERUSER'
+        if not self.request.user.is_superuser and not is_my_role_super:
+            all_roles = [(code, name) for code, name in all_roles if code != 'SUPERUSER']
+        context['role_choices'] = all_roles
         return context
     
     
@@ -275,12 +280,27 @@ class UserEditView(UpdatePermissionMixin, UpdateView):
     success_url = reverse_lazy('user_management:index')
     permission_module = 'user_management'
 
+    def dispatch(self, request, *args, **kwargs):
+        """Proteksi SUPERUSER: non-SUPERUSER tidak boleh edit akun SUPERUSER."""
+        user_target = self.get_object()
+        is_my_role_super = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'SUPERUSER')
+        target_is_super = hasattr(user_target, 'profile') and user_target.profile.role == 'SUPERUSER'
+        if target_is_super and not is_my_role_super:
+            messages.error(request, 'Role SUPERUSER bersifat khusus dan tidak dapat diedit oleh role Anda.')
+            return redirect('user_management:index')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
         context['title'] = f'Edit User: {self.object.username}'
         context['is_edit'] = True
-        context['role_choices'] = RolePermission.get_all_roles()
+        # Filter SUPERUSER dari dropdown jika pembuka form bukan SUPERUSER
+        all_roles = RolePermission.get_all_roles()
+        is_my_role_super = self.request.user.is_superuser or (hasattr(self.request.user, 'profile') and self.request.user.profile.role == 'SUPERUSER')
+        if not is_my_role_super:
+            all_roles = [(code, name) for code, name in all_roles if code != 'SUPERUSER']
+        context['role_choices'] = all_roles
         try:
             context['current_role'] = self.object.profile.role
         except:
@@ -340,7 +360,23 @@ class UserDeleteView(DeletePermissionMixin, DeleteView):
         """Hapus data — return JSON response untuk AJAX."""
         user = self.get_object()
         username = user.username
-    
+
+        # Proteksi: tidak boleh hapus diri sendiri
+        if user == request.user:
+            return JsonResponse({
+                'success': False,
+                'message': 'Anda tidak dapat menghapus akun sendiri!'
+            }, status=400)
+
+        # Proteksi SUPERUSER: non-SUPERUSER tidak boleh hapus akun SUPERUSER
+        is_my_role_super = request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'SUPERUSER')
+        target_is_super = hasattr(user, 'profile') and user.profile.role == 'SUPERUSER'
+        if target_is_super and not is_my_role_super:
+            return JsonResponse({
+                'success': False,
+                'message': 'Role SUPERUSER bersifat khusus dan tidak dapat dihapus oleh role Anda!'
+            }, status=400)
+
         try:
             user.delete()
             return JsonResponse({

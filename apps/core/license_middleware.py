@@ -52,15 +52,16 @@ class LicenseMiddleware:
         '/media/',
         '/admin/',
         '/favicon.ico',
+        # Halaman maintenance sengaja DIKELUARKAN dari exempt agar middleware bisa mendeteksi saat statusnya OFF
     ]
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Skip untuk URL yang dikecualikan
         path = request.path
-        if any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS):
+        # Memastikan tidak ada infinite redirect di halaman khusus
+        if any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS) or getattr(request, '_license_maintenance_redirect', False):
             return self.get_response(request)
 
         # ============================================================
@@ -82,11 +83,31 @@ class LicenseMiddleware:
         # Ini berlaku untuk SEMUA pengunjung (login maupun belum login)
         if not config.license_key or not config.is_activated:
             return HttpResponseRedirect(reverse('license_activation'))
+            
+        def _check_maintenance_or_update(cnf):
+            # Cek Force Update
+            if cnf.min_app_version and cnf.app_version:
+                try:
+                    def parse_v(vstr): return [int(x) for x in vstr.lower().replace('v','').split('.') if x.isdigit()]
+                    if parse_v(cnf.app_version) < parse_v(cnf.min_app_version):
+                        return HttpResponseRedirect(reverse('license_activation') + '?error=force_update')
+                except Exception: pass
+            
+            # Cek Remote Maintenance
+            if cnf.is_maintenance:
+                target_url = reverse('pages-misc-under-maintenance')
+                if request.path != target_url:
+                    return HttpResponseRedirect(target_url)
+                return None
+                
+            return None
 
         # Cek cache validasi
         if config.is_cache_valid():
             if config.validation_cache:
-                # Cache masih valid DAN lisensi valid → lanjut
+                # Cache masih valid DAN lisensi valid → cek maintenance/update
+                interception = _check_maintenance_or_update(config)
+                if interception: return interception
                 return self.get_response(request)
             else:
                 # Cache masih valid TAPI lisensi INVALID (CLS bilang invalid)
@@ -102,11 +123,13 @@ class LicenseMiddleware:
         # di CLS (suspend, expired) langsung berdampak realtime.
         # ============================================================
         hardware_id = config.hardware_id or generate_hardware_id()
-        cls_url = getattr(settings, 'LICENSE_SERVER_URL', config.cls_server_url)
+        cls_url = config.cls_server_url if config.cls_server_url else getattr(settings, 'LICENSE_SERVER_URL', 'https://cls.serpgroup.cloud')
 
         is_valid = self._validate_with_cls(config, hardware_id, cls_url)
 
         if is_valid:
+            interception = _check_maintenance_or_update(config)
+            if interception: return interception
             return self.get_response(request)
 
         # Jika validasi gagal DAN CLS tidak bisa dihubungi (offline)
@@ -157,6 +180,10 @@ class LicenseMiddleware:
                         expires_at=resp_data.get('expires_at'),
                         product_name=resp_data.get('product_name'),
                         client_name=resp_data.get('client_name'),
+                        is_maintenance=resp_data.get('is_maintenance', False),
+                        maintenance_message=resp_data.get('maintenance_message'),
+                        min_app_version=resp_data.get('min_app_version', 'v1.0'),
+                        force_update_url=resp_data.get('force_update_url')
                     )
                     logger.info(f"Validasi lisensi berhasil: {config.license_key}")
                     return True
@@ -169,9 +196,24 @@ class LicenseMiddleware:
                     logger.warning(f"Validasi gagal: {data.get('message')}")
                     return False
 
-        except (urllib.error.URLError, urllib.error.HTTPError) as e:
-            # Gagal koneksi ke CLS — kembalikan status cache lama
-            logger.error(f"Gagal menghubungi CLS: {e}")
+        except urllib.error.HTTPError as e:
+            # CLS mengembalikan status error (403 Forbidden, 404 Not Found, dll)
+            # Ini berarti response sampai, tapi lisensi invalid/ada masalah.
+            try:
+                error_data = json.loads(e.read().decode('utf-8'))
+                config.update_validation_cache(
+                    is_valid=False,
+                    message=error_data.get('message', 'Lisensi ditolak oleh server.')
+                )
+                logger.warning(f"Validasi ditolak server: {error_data.get('message')}")
+            except Exception:
+                config.update_validation_cache(is_valid=False, message="Lisensi tidak dikenali.")
+            return False
+
+        except urllib.error.URLError as e:
+            # Gagal koneksi (server benar-benar mati / jaringan putus)
+            # Biarkan status cache lama tetap ada agar masuk mode toleransi offline
+            logger.error(f"Gagal menghubungi CLS (Offline): {e}")
             return False
 
         except Exception as e:

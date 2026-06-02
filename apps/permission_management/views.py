@@ -37,11 +37,15 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.http import JsonResponse
 from apps.core.models import RolePermission
-from apps.core.mixins import SuperuserRequiredMixin
+from apps.core.mixins import (
+    ReadPermissionMixin, CreatePermissionMixin, UpdatePermissionMixin, DeletePermissionMixin, SuperuserRequiredMixin
+)
 from django.db import transaction
 
 @method_decorator(login_required, name='dispatch')
-class PermissionListView(SuperuserRequiredMixin, ListView):
+class PermissionListView(ReadPermissionMixin, ListView):
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     paginate_by = 50
     """
     View untuk menampilkan DAFTAR SEMUA PERMISSION di sistem.
@@ -70,7 +74,7 @@ class PermissionListView(SuperuserRequiredMixin, ListView):
 
 
 @method_decorator(login_required, name='dispatch')
-class RolePermissionCreateView(SuperuserRequiredMixin, CreateView):
+class RolePermissionCreateView(CreatePermissionMixin, CreateView):
     """
     View untuk MENAMBAHKAN PERMISSION BARU (role + module).
 
@@ -84,6 +88,8 @@ class RolePermissionCreateView(SuperuserRequiredMixin, CreateView):
     template_name = 'permission_management/role_permission_form.html'
     fields = ['role', 'module', 'can_view', 'can_create', 'can_edit', 'can_delete', 'description']
     success_url = reverse_lazy('permission_management:list')
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -103,7 +109,7 @@ class RolePermissionCreateView(SuperuserRequiredMixin, CreateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class RolePermissionUpdateView(SuperuserRequiredMixin, UpdateView):
+class RolePermissionUpdateView(UpdatePermissionMixin, UpdateView):
     """
     View untuk MENGEDIT PERMISSION yang sudah ada.
 
@@ -118,6 +124,8 @@ class RolePermissionUpdateView(SuperuserRequiredMixin, UpdateView):
     fields = ['can_view', 'can_create', 'can_edit', 'can_delete', 'description']
     success_url = reverse_lazy('permission_management:list')
     pk_url_kwarg = 'pk'
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
 
     def get_context_data(self, **kwargs):
         """Menambahkan data konteks tambahan ke template."""
@@ -137,7 +145,7 @@ class RolePermissionUpdateView(SuperuserRequiredMixin, UpdateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class RolePermissionDeleteView(SuperuserRequiredMixin, DeleteView):
+class RolePermissionDeleteView(DeletePermissionMixin, DeleteView):
     """
     View untuk MENGHAPUS PERMISSION.
 
@@ -151,6 +159,8 @@ class RolePermissionDeleteView(SuperuserRequiredMixin, DeleteView):
     model = RolePermission
     success_url = reverse_lazy('permission_management:list')
     pk_url_kwarg = 'pk'
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
 
 
     def post(self, request, *args, **kwargs):
@@ -182,7 +192,9 @@ class RolePermissionDeleteView(SuperuserRequiredMixin, DeleteView):
     # Dipanggil via JavaScript AJAX dari frontend.
 
 @method_decorator(login_required, name='dispatch')
-class PermissionCreateAjaxView(SuperuserRequiredMixin, View):
+class PermissionCreateAjaxView(CreatePermissionMixin, View):
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     """
     AJAX endpoint untuk MEMBUAT PERMISSION BARU via modal popup.
 
@@ -233,7 +245,9 @@ class PermissionCreateAjaxView(SuperuserRequiredMixin, View):
 
 
 @method_decorator(login_required, name='dispatch')
-class PermissionUpdateAjaxView(SuperuserRequiredMixin, View):
+class PermissionUpdateAjaxView(UpdatePermissionMixin, View):
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     """
     AJAX endpoint untuk MENGUPDATE PERMISSION via modal popup.
 
@@ -279,7 +293,9 @@ class PermissionUpdateAjaxView(SuperuserRequiredMixin, View):
 # Dipanggil via JavaScript AJAX dari frontend.
 
 @method_decorator(login_required, name='dispatch')
-class PermissionDataAjaxView(SuperuserRequiredMixin, View):
+class PermissionDataAjaxView(ReadPermissionMixin, View):
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     """
     AJAX endpoint untuk MENGAMBIL DATA PERMISSION (untuk mengisi modal edit).
 

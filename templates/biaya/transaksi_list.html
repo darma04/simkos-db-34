@@ -104,16 +104,21 @@
                             </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input column-checkbox" type="checkbox" value="4"
+                                    id="col-status" checked onchange="toggleColumns()">
+                                <label class="form-check-label" for="col-status">Status</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="5"
                                     id="col-metode" checked onchange="toggleColumns()">
                                 <label class="form-check-label" for="col-metode">Metode Pembayaran</label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input column-checkbox" type="checkbox" value="5"
+                                <input class="form-check-input column-checkbox" type="checkbox" value="6"
                                     id="col-deskripsi" checked onchange="toggleColumns()">
                                 <label class="form-check-label" for="col-deskripsi">Deskripsi</label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input column-checkbox" type="checkbox" value="6" id="col-oleh"
+                                <input class="form-check-input column-checkbox" type="checkbox" value="7" id="col-oleh"
                                     checked onchange="toggleColumns()">
                                 <label class="form-check-label" for="col-oleh">Dicatat Oleh</label>
                             </div>
@@ -166,6 +171,7 @@
                         <th>Tanggal</th>
                         <th>Kategori</th>
                         <th>Jumlah</th>
+                        <th>Status</th>
                         <th>Metode Pembayaran</th>
                         <th>Deskripsi</th>
                         <th>Dicatat Oleh</th>
@@ -191,6 +197,17 @@
                             <span class="badge bg-label-danger">{{ trx.kategori.nama }}</span>
                         </td>
                         <td class="fw-bold text-danger">{{ trx.jumlah|rupiah }}</td>
+                        <td>
+                            {% if trx.status == 'draft' %}
+                            <span class="badge bg-label-secondary">Draft</span>
+                            {% elif trx.status == 'submitted' %}
+                            <span class="badge bg-label-info">Diajukan</span>
+                            {% elif trx.status == 'approved' %}
+                            <span class="badge bg-label-success">Disetujui</span>
+                            {% elif trx.status == 'rejected' %}
+                            <span class="badge bg-label-danger">Ditolak</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if trx.metode_pembayaran %}
                             <span class="badge bg-label-primary">{{ trx.nama_metode_pembayaran }}</span>
@@ -260,7 +277,7 @@
                             <span class="badge bg-label-danger" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">Rp {{ total_amount_biaya|floatformat:0|default:"0" }}</span>
                             <br><small class="text-muted">Total Biaya</small>
                         </td>
-                        <td colspan="4" class="py-3"></td>
+                        <td colspan="5" class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -418,7 +435,7 @@
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [
-                { orderable: false, targets: [7] } // Kolom Aksi di index 7
+                { orderable: false, targets: [8] } // Kolom Aksi di index 8
             ],
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
@@ -454,7 +471,7 @@
         email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
     };
-    // Kolom: 0=No.Trx, 1=Tanggal, 2=Kategori, 3=Jumlah, 4=Metode, 5=Deskripsi, 6=DicatatOleh, 7=Aksi(skip)
+    // Kolom: 0=No.Trx, 1=Tanggal, 2=Kategori, 3=Jumlah, 4=Status, 5=Metode, 6=Deskripsi, 7=DicatatOleh, 8=Aksi(skip)
     // FOOTER_DATA {3: total_jumlah} → total Jumlah tampil di kolom 3 yang tepat
     const FOOTER_DATA_BIAYA = { 3: {{ total_amount_biaya|floatformat:0|default:0 }} };
     const FOOTER_LABEL_BIAYA = 'RINGKASAN ({{ total_transaksi_biaya }} Transaksi Biaya)';

@@ -105,8 +105,8 @@ class TemplatePesanListView(ReadPermissionMixin, ListView):
         return context
 
 
-class TemplatePesanUpdateView(UpdatePermissionMixin, UpdateView):
-    """View untuk edit template pesan"""
+class TemplatePesanUpdateView(ReadPermissionMixin, UpdateView):
+    """View untuk edit template pesan. ReadPermissionMixin agar user bisa VIEW form meskipun tanpa edit permission."""
     model = TemplatePesan
     template_name = 'automation/template_pesan_form.html'
     fields = ['nama', 'template_pesan', 'aktif']
@@ -125,6 +125,13 @@ class TemplatePesanUpdateView(UpdatePermissionMixin, UpdateView):
         }
         context['variabel_tersedia'] = variabel_map.get(self.object.jenis, [])
         return context
+
+    def post(self, request, *args, **kwargs):
+        """Proteksi POST: hanya user dengan permission edit yang bisa menyimpan."""
+        if not request.user.is_superuser and not has_permission(request.user, 'update', 'automation'):
+            messages.error(request, 'Anda tidak memiliki akses untuk mengubah template pesan.')
+            return redirect('automation:template_pesan_list')
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         """Dipanggil saat form valid — proses penyimpanan data."""

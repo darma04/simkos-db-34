@@ -16,6 +16,28 @@
         <span class="text-muted fw-light">Biaya /</span> {{ title }}
     </h4>
 
+    
+    <!-- UI Gating: Read-Only Alert -->
+    {% if is_edit and not can_edit.biaya.transaksi %}
+    <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
+        <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
+        <p class="mb-0">Anda hanya memiliki akses untuk melihat form ini. Field input telah dinonaktifkan.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            const saveBtns = document.querySelectorAll('button[type="submit"]');
+            saveBtns.forEach(btn => {
+                btn.style.display = 'none';
+            });
+        });
+    </script>
+    {% endif %}
+
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
@@ -57,17 +79,17 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">{{ form.cabang.label }}</label>
-                                    {{ form.cabang }}
-                                    <div class="form-text">Pilih properti untuk biaya ini (opsional)</div>
-                                </div>
-
-                                <div class="mb-3">
                                     <label class="form-label">{{ form.jumlah.label }} <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         {{ form.jumlah }}
                                     </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
+                                    {{ form.status }}
+                                    <div class="form-text">Status persetujuan transaksi biaya</div>
                                 </div>
                             </div>
 

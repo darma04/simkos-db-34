@@ -103,6 +103,14 @@ class AbsensiForm(forms.ModelForm):
 
 class PenggajianForm(forms.ModelForm):
     """Form untuk Generate Penggajian"""
+    # Metode pembayaran sebagai dropdown dinamis dari MetodePembayaran (Pengaturan)
+    metode_pembayaran = forms.ChoiceField(
+        choices=[('', 'Pilih Metode Pembayaran')],
+        required=False,
+        label='Metode Pembayaran',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
     class Meta:
         """Konfigurasi form Penggajian — semua komponen pendapatan dan potongan."""
         model = Penggajian
@@ -111,7 +119,8 @@ class PenggajianForm(forms.ModelForm):
             'gaji_pokok', 'tunjangan_jabatan', 'tunjangan_makan',
             'tunjangan_transport', 'tunjangan_lainnya', 'lembur', 'bonus',
             'potongan_bpjs_kesehatan', 'potongan_bpjs_ketenagakerjaan',
-            'potongan_pph21', 'potongan_lainnya', 'catatan'
+            'potongan_pph21', 'potongan_lainnya',
+            'metode_pembayaran', 'catatan'
         ]
         widgets = {
             'karyawan': forms.Select(attrs={'class': 'form-select'}),
@@ -134,6 +143,18 @@ class PenggajianForm(forms.ModelForm):
             'potongan_lainnya': forms.NumberInput(attrs={'class': 'form-control'}),
             'catatan': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Populate metode_pembayaran choices dari MetodePembayaran aktif
+        try:
+            from apps.pengaturan.models import MetodePembayaran
+            metode_qs = MetodePembayaran.objects.filter(aktif=True).order_by('nama')
+            choices = [('', 'Pilih Metode Pembayaran')]
+            choices += [(m.kode, m.nama) for m in metode_qs]
+            self.fields['metode_pembayaran'].choices = choices
+        except Exception:
+            pass
 
 
 class FotoWajahForm(forms.ModelForm):

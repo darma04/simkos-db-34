@@ -29,7 +29,7 @@
         .invoice-number { font-size: 14px; color: #666; margin-bottom: 10px; }
         .invoice-status { display: inline-block; padding: 6px 20px; -webkit-border-radius: 20px; border-radius: 20px; font-weight: bold; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;  margin-top: 12px; }
         .status-belum_bayar { background-color: #fff3cd; color: #856404; border: 1px solid #ffc107; }
-        .status-lunas { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-lunas { background-color: #e7e7ff; color: #696cff; border: 1px solid #c1c2ff; }
         .status-sebagian { background-color: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
         .status-terlambat { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
@@ -215,7 +215,7 @@
             {% if tagihan.jumlah_bayar > 0 %}
             <tr>
                 <td>Bayar (Deposit):</td>
-                <td style="text-align: right; color: green;">- Rp {{ tagihan.jumlah_bayar|floatformat:0|intcomma }}</td>
+                <td style="text-align: right; color: #696cff;">- Rp {{ tagihan.jumlah_bayar|floatformat:0|intcomma }}</td>
             </tr>
             <tr>
                 <td style="font-size: 11px; color: #666;">Metode Pembayaran:</td>
@@ -227,7 +227,7 @@
             {% if not bayar.catatan|truncatewords:4 == "Pembayaran otomatis dari tagihan..." %}
             <tr>
                 <td>Bayar ({{ bayar.tanggal_bayar|date:"d/m/Y" }}):</td>
-                <td style="text-align: right; color: green;">- Rp {{ bayar.jumlah_bayar|floatformat:0|intcomma }}</td>
+                <td style="text-align: right; color: #696cff;">- Rp {{ bayar.jumlah_bayar|floatformat:0|intcomma }}</td>
             </tr>
             {% endif %}
             {% endfor %}

@@ -85,7 +85,7 @@ class TransaksiBiaya(models.Model):
 
     # Tanggal pengeluaran — DateField (bukan DateTimeField) karena hanya perlu tanggal
     # Berbeda dengan POS yang pakai DateTimeField karena butuh waktu detail
-    tanggal = models.DateField(verbose_name="Tanggal")
+    tanggal = models.DateField(verbose_name="Tanggal", db_index=True)
 
     # Kategori biaya — FK ke KategoriBiaya (contoh: Listrik, Gaji)
     # on_delete=PROTECT → kategori tidak bisa dihapus jika masih ada transaksi
@@ -103,7 +103,7 @@ class TransaksiBiaya(models.Model):
     bukti = models.FileField(upload_to='biaya/', blank=True, null=True, verbose_name="Bukti (Foto/PDF)")
 
     # Status workflow — mengikuti alur persetujuan (lihat STATUS_CHOICES di atas)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name="Status", db_index=True)
 
     # ===== TRACKING PENGGUNA =====
     # Siapa yang membuat transaksi biaya ini

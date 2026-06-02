@@ -36,5 +36,7 @@ urlpatterns = [
     path('transaksi/<int:pk>/', views.TransaksiBiayaDetailView.as_view(), name='transaksi_detail'),
     path('transaksi/<int:pk>/edit/', views.TransaksiBiayaUpdateView.as_view(), name='transaksi_edit'),
     path('transaksi/<int:pk>/delete/', views.TransaksiBiayaDeleteView.as_view(), name='transaksi_delete'),
+    path('transaksi/<int:pk>/approve/', views.TransaksiBiayaApproveView.as_view(), name='transaksi_approve'),
+    path('transaksi/<int:pk>/reject/', views.TransaksiBiayaRejectView.as_view(), name='transaksi_reject'),
     path('transaksi/<int:pk>/print/', views.TransaksiBiayaPrintView.as_view(), name='transaksi_print'),
 ]

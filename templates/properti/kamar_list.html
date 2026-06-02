@@ -31,7 +31,9 @@
             <h4 class="mb-1"><i class="ri-hotel-bed-line me-2"></i>Daftar Kamar</h4>
             <p class="text-muted mb-0">Kelola data kamar di seluruh properti</p>
         </div>
+        {% if can_create.properti %}
         <a href="{% url 'properti:kamar_add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Kamar</a>
+        {% endif %}
     </div>
 
     <!-- Filter Card -->
@@ -129,14 +131,22 @@
                             {% elif k.status == 'maintenance' %}<span class="badge bg-label-danger">Perbaikan</span>{% endif %}
                         </td>
                         <td>
+                            {% if can_edit.properti or can_delete.properti %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                                 <div class="dropdown-menu">
+                                    {% if can_edit.properti %}
                                     <a class="dropdown-item" href="{% url 'properti:kamar_edit' k.pk %}"><i class="ri-edit-line me-2"></i>Edit</a>
+                                    {% endif %}
+                                    {% if can_delete.properti %}
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ k.pk }},'{{ k.nomor_kamar }}')"><i class="ri-delete-bin-line me-2"></i>Hapus</a>
+                                    {% endif %}
                                 </div>
                             </div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

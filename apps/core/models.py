@@ -115,6 +115,7 @@ class RolePermission(models.Model):
             ('profil', 'Profil Saya'),                       # Edit profil user
             ('perusahaan', 'Pengaturan Perusahaan'),         # Setting perusahaan
             ('template_cetak', 'Template Cetak'),             # Template cetak dokumen
+            ('metode_pembayaran', 'Metode Pembayaran'),       # Setting rekening/pembayaran
             ('manajemen_data', 'Manajemen Data'),             # Manajemen data
         ],
         'ai': [
@@ -164,6 +165,7 @@ class RolePermission(models.Model):
         'profil': 'profil',                          # sidebar: pengaturan-profil
         'perusahaan': 'perusahaan',                  # sidebar: pengaturan-perusahaan
         'template_cetak': 'template-cetak',          # sidebar: pengaturan-template-cetak
+        'metode_pembayaran': 'metode-pembayaran',    # sidebar: pengaturan-metode-pembayaran
         'manajemen_data': 'manajemen-data',          # sidebar: pengaturan-manajemen-data
         # === AI Assistant ===
         'ai_dashboard': 'dashboard',                 # sidebar: ai-dashboard
@@ -187,14 +189,16 @@ class RolePermission(models.Model):
     # choices dihapus agar bisa menerima role kustom dari database
     role = models.CharField(
         max_length=50,
-        verbose_name="Role"
+        verbose_name="Role",
+        db_index=True
     )
 
     # Modul yang diakses (contoh: 'produk', 'inventory', 'pos')
     module = models.CharField(
         max_length=50,
         choices=MODULE_CHOICES,
-        verbose_name="Module"
+        verbose_name="Module",
+        db_index=True
     )
 
     # Sub-modul (opsional) — untuk permission lebih detail

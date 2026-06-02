@@ -26,6 +26,15 @@
     {% endfor %}
     {% endif %}
 
+    <!-- UI Gating: Read-Only Alert -->
+    {% if not can_edit.automation %}
+    <div class="alert alert-warning alert-dismissible mb-4" role="alert">
+        <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
+        <p class="mb-0">Anda tidak memiliki permission untuk mengubah pengaturan Telegram. Semua form dinonaktifkan.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <form method="post" id="telegramForm">
         {% csrf_token %}
 
@@ -276,6 +285,22 @@
 
     <!-- Alert Response -->
     <div id="testResult" class="alert" style="display: none;"></div>
+
+    <!-- UI Gating: JS Auto-Disabler -->
+    {% if not can_edit.automation %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('#telegramForm input, #telegramForm select, #telegramForm textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            const saveBtns = document.querySelectorAll('#btnSimpan, #testBtn, #btnDeteksiChatId, #btnClearChatId');
+            saveBtns.forEach(btn => {
+                btn.style.display = 'none';
+            });
+        });
+    </script>
+    {% endif %}
 </div>
 {% endblock content %}
 

@@ -280,6 +280,7 @@ class PembayaranSewaCreateView(CreateView):
 
     def form_valid(self, form):
         """Simpan pembayaran baru dan kirim notifikasi Telegram."""
+        form.instance.dicatat_oleh = self.request.user
         response = super().form_valid(form)
 
         # Kirim notifikasi Telegram

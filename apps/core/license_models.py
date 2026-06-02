@@ -89,6 +89,21 @@ class LicenseConfig(models.Model):
         null=True, blank=True,
         verbose_name="Tanggal Lisensi Berakhir"
     )
+    is_maintenance = models.BooleanField(
+        default=False, verbose_name="Kunci Maintenance (Dari CLS)"
+    )
+    maintenance_message = models.TextField(
+        blank=True, null=True, verbose_name="Pesan Maintenance"
+    )
+    min_app_version = models.CharField(
+        max_length=20, blank=True, null=True, verbose_name="Minimal Versi Aplikasi"
+    )
+    force_update_url = models.URLField(
+        blank=True, null=True, verbose_name="URL Force Update"
+    )
+    app_version = models.CharField(
+        max_length=20, default="v1.0", verbose_name="Versi Aplikasi Lokal"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -115,15 +130,23 @@ class LicenseConfig(models.Model):
         return timezone.now() < self.cache_expires_at
 
     def update_validation_cache(self, is_valid, message="", expires_at=None,
-                                 product_name=None, client_name=None):
+                                 product_name=None, client_name=None, 
+                                 is_maintenance=False, maintenance_message=None,
+                                 min_app_version=None, force_update_url=None):
         """Update cache validasi dengan hasil terbaru dari CLS."""
         from datetime import timedelta
         self.validation_cache = is_valid
         self.validation_message = message
         self.last_validated = timezone.now()
+        
+        self.is_maintenance = is_maintenance
+        self.maintenance_message = maintenance_message
+        self.min_app_version = min_app_version
+        self.force_update_url = force_update_url
+        
         if is_valid:
-            # Cache valid berlaku 1 menit — agar perubahan status di CLS terasa realtime
-            self.cache_expires_at = timezone.now() + timedelta(minutes=1)
+            # Cache valid berlaku 15 detik — agar perubahan status di CLS terasa realtime
+            self.cache_expires_at = timezone.now() + timedelta(seconds=15)
         else:
             # Cache invalid hanya berlaku 30 detik — agar bisa cek ulang lebih cepat
             self.cache_expires_at = timezone.now() + timedelta(seconds=30)

@@ -9,7 +9,7 @@
 {% load static %}
 {% load currency_filters %}
 
-{% block title %}Detail Transaksi Biaya - SIMKOS{% endblock title %}
+{% block title %}Detail Transaksi Biaya - ERP{% endblock title %}
 
 {% block page_css %}
 <style>
@@ -44,9 +44,19 @@
             <a href="{% url 'biaya:transaksi' %}" class="btn btn-label-secondary">
                 <i class="ri-arrow-left-line me-1"></i>Kembali
             </a>
+            {% if transaksi.status == 'draft' or transaksi.status == 'submitted' %}
+            <button type="button" class="btn btn-success" id="btn-approve" data-url="{% url 'biaya:transaksi_approve' transaksi.pk %}">
+                <i class="ri-check-line me-1"></i>Setujui
+            </button>
+            <button type="button" class="btn btn-danger" id="btn-reject" data-url="{% url 'biaya:transaksi_reject' transaksi.pk %}">
+                <i class="ri-close-line me-1"></i>Tolak
+            </button>
+            {% endif %}
+            {% if can_edit.biaya %}
             <a href="{% url 'biaya:transaksi_edit' transaksi.pk %}" class="btn btn-label-primary">
                 <i class="ri-edit-line me-1"></i>Edit
             </a>
+            {% endif %}
             <a href="{% url 'biaya:transaksi_print' transaksi.pk %}" target="_blank" class="btn btn-primary">
                 <i class="ri-printer-line me-1"></i>Cetak
             </a>
@@ -188,3 +198,59 @@
     </div>
 </div>
 {% endblock content %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Approve button
+    const btnApprove = document.getElementById('btn-approve');
+    if (btnApprove) {
+        btnApprove.addEventListener('click', function() {
+            if (!confirm('Apakah Anda yakin ingin menyetujui transaksi biaya ini?')) return;
+            const url = this.dataset.url;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Gagal menyetujui transaksi.');
+                }
+            })
+            .catch(() => alert('Terjadi kesalahan jaringan.'));
+        });
+    }
+
+    // Reject button
+    const btnReject = document.getElementById('btn-reject');
+    if (btnReject) {
+        btnReject.addEventListener('click', function() {
+            if (!confirm('Apakah Anda yakin ingin menolak transaksi biaya ini?')) return;
+            const url = this.dataset.url;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Gagal menolak transaksi.');
+                }
+            })
+            .catch(() => alert('Terjadi kesalahan jaringan.'));
+        });
+    }
+});
+</script>
+{% endblock page_js %}

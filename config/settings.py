@@ -82,7 +82,6 @@ INSTALLED_APPS = [
     # AI Assistant
     "apps.ai_assistant",
     # Original Apps
-    "apps.sample",
     "apps.pages",
 ]
 
@@ -98,8 +97,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.double_submit_middleware.PreventDoubleSubmitMiddleware",
     "apps.activity_log.middleware.ActivityLogMiddleware",
     "apps.core.license_middleware.LicenseMiddleware",
+    "apps.core.maintenance_middleware.MaintenanceMiddleware",
 ]
 
 # ==========================================================================
@@ -193,7 +194,7 @@ LANGUAGES = [
 # ! Make sure you have cleared the browser cache after changing the default language
 LANGUAGE_CODE = "en"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Jakarta"
 
 USE_I18N = True
 
@@ -258,8 +259,16 @@ LOGIN_REDIRECT_URL = "/"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry setiap request (cegah logout mendadak)
+
+# Cookie name unik per aplikasi
+SESSION_COOKIE_NAME = "simkos_sessionid"
+CSRF_COOKIE_NAME = "simkos_csrftoken"
+CSRF_COOKIE_HTTPONLY = False
+
+# CSRF Failure Handler — Redirect ramah saat token kedaluwarsa (bukan error 403)
+CSRF_FAILURE_VIEW = "auth.csrf_failure.csrf_failure_view"
 
 # ==========================================================================
 #  SECURITY HARDENING — Perlindungan dari Serangan Cyber
@@ -281,29 +290,24 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # --- Pengaturan KHUSUS PRODUCTION (hanya aktif saat DEBUG=False) ---
 if not DEBUG:
-    # HTTPS wajib: semua HTTP request di-redirect ke HTTPS
     SECURE_SSL_REDIRECT = True
-
-    # HSTS (HTTP Strict Transport Security):
-    # Browser akan SELALU menggunakan HTTPS selama 1 tahun
-    # Bahkan jika user mengetik http:// → otomatis jadi https://
-    SECURE_HSTS_SECONDS = 31536000       # 1 tahun dalam detik
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Berlaku juga untuk subdomain
-    SECURE_HSTS_PRELOAD = True             # Daftarkan ke HSTS preload list browser
-
-    # Cookie hanya dikirim via HTTPS (cegah penyadapan session)
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-
-    # Proxy header: PythonAnywhere menggunakan reverse proxy
-    # Header ini memberitahu Django bahwa request aslinya HTTPS
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # ================================================================
+    # COOKIE SECURE FLAG — DINONAKTIFKAN untuk kompatibilitas Android WebView
+    # ================================================================
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-    # Referrer Policy: jangan kirim URL lengkap ke situs eksternal
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 else:
-    # Development: cookie bisa dikirim tanpa HTTPS
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # Your stuff...
 # ------------------------------------------------------------------------------

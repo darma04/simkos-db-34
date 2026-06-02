@@ -99,9 +99,11 @@
                                         {% endif %}
                                     </div>
                                     <small class="text-muted d-block mt-1">
+                                        {% if can_edit.permission_management %}
                                         <a href="{% url 'permission_management:edit' perm.pk %}" class="text-decoration-none">
                                             <i class="ri-settings-4-line"></i>
                                         </a>
+                                        {% endif %}
                                     </small>
                                     {% else %}
                                     <span class="badge bg-label-secondary">

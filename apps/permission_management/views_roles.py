@@ -38,15 +38,19 @@ from django.db.models import Count, Q
 
 from web_project import TemplateLayout
 from apps.core.models import RolePermission
-from apps.core.mixins import SuperuserRequiredMixin
+from apps.core.mixins import (
+    ReadPermissionMixin, CreatePermissionMixin, UpdatePermissionMixin, DeletePermissionMixin, SuperuserRequiredMixin
+)
 from auth.models import Profile
 
 
 @method_decorator(login_required, name='dispatch')
-class RoleListView(SuperuserRequiredMixin, ListView):
+class RoleListView(ReadPermissionMixin, ListView):
     """
     Display Role cards with user counts and users datatables
     """
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     model = User
     template_name = 'permission_management/role_list.html'
     context_object_name = 'users'
@@ -115,10 +119,12 @@ class RoleListView(SuperuserRequiredMixin, ListView):
 
 
 @method_decorator(login_required, name='dispatch')
-class RoleDataAjaxView(SuperuserRequiredMixin, View):
+class RoleDataAjaxView(ReadPermissionMixin, View):
     """
     AJAX endpoint to get role data for editing
     """
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     
     def get(self, request, role):
         """Handle HTTP GET request."""
@@ -149,10 +155,12 @@ class RoleDataAjaxView(SuperuserRequiredMixin, View):
 
 
 @method_decorator(login_required, name='dispatch')
-class RoleCreateAjaxView(SuperuserRequiredMixin, View):
+class RoleCreateAjaxView(CreatePermissionMixin, View):
     """
     AJAX endpoint to create new role with permissions
     """
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     
     def post(self, request):
         """Handle HTTP POST request."""
@@ -253,9 +261,9 @@ class RoleCreateAjaxView(SuperuserRequiredMixin, View):
                 
                 created_count = len(new_permissions)
             
-            # Invalidasi cache agar permission baru langsung dikenali jika ada yang mereferensikan
-            from apps.core.cache_utils import invalidate_role_permissions_cache
-            invalidate_role_permissions_cache(role_name)
+            # Hapus cache permission agar role baru langsung dikenali (real-time, 0 detik delay)
+            from django.core.cache import cache
+            cache.delete(f'role_perms_{role_name}')
             
             return JsonResponse({
                 'success': True,
@@ -272,10 +280,12 @@ class RoleCreateAjaxView(SuperuserRequiredMixin, View):
 
 
 @method_decorator(login_required, name='dispatch')
-class RoleUpdateAjaxView(SuperuserRequiredMixin, View):
+class RoleUpdateAjaxView(UpdatePermissionMixin, View):
     """
     AJAX endpoint to update role permissions
     """
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
     
     def post(self, request, role):
         """Handle HTTP POST request."""
@@ -399,14 +409,12 @@ class RoleUpdateAjaxView(SuperuserRequiredMixin, View):
                 
                 created_count = len(new_permissions)
             
-            # Invalidasi cache setelah transaction selesai
-            from apps.core.cache_utils import invalidate_role_permissions_cache
+            # Hapus cache permission secara langsung (real-time, 0 detik delay)
+            from django.core.cache import cache
             
             if role_renamed:
-                invalidate_role_permissions_cache(old_role_name)
-                invalidate_role_permissions_cache(target_role)
-            else:
-                invalidate_role_permissions_cache(target_role)
+                cache.delete(f'role_perms_{old_role_name}')
+            cache.delete(f'role_perms_{target_role}')
             
             role_display = dict(RolePermission.get_all_roles()).get(target_role, target_role)
             message += f'Permissions untuk {role_display} berhasil diupdate! ({created_count} permissions)'
@@ -426,12 +434,14 @@ class RoleUpdateAjaxView(SuperuserRequiredMixin, View):
 
 
 @method_decorator(login_required, name='dispatch')
-class RoleDeleteView(SuperuserRequiredMixin, View):
+class RoleDeleteView(DeletePermissionMixin, View):
     """
     Handle penghapusan role beserta semua permission-nya.
     Role SUPERUSER tidak bisa dihapus.
     Jika role masih digunakan user, user akan di-reset ke role kosong (force).
     """
+    permission_module = 'access_control'
+    permission_sub_module = 'role'
 
     def post(self, request, role_code):
         """Handle HTTP POST request."""

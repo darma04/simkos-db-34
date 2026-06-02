@@ -19,7 +19,9 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div><h4 class="mb-1"><i class="ri-hand-coin-line me-2"></i>Pembayaran Sewa</h4><p class="text-muted mb-0">Riwayat pembayaran sewa penyewa</p></div>
+        {% if can_create.sewa %}
         <a href="{% url 'sewa:pembayaran_add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Catat Pembayaran</a>
+        {% endif %}
     </div>
 
     <!-- Filter Card -->
@@ -85,15 +87,25 @@
                         <td>{% if p.metode_bayar %}<span class="badge bg-label-primary">{{ p.nama_metode_bayar }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
                         <td>{{ p.catatan|default:"-"|truncatewords:6 }}</td>
                         <td>
+                            {% if can_edit.sewa or can_delete.sewa %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ri-more-2-line"></i></button>
                                 <div class="dropdown-menu">
+                                    {% if can_view.sewa %}
                                     <a class="dropdown-item" href="{% url 'sewa:pembayaran_detail' p.pk %}"><i class="ri-eye-line me-2"></i>Detail</a>
+                                    {% endif %}
                                     <a class="dropdown-item" href="{% url 'sewa:pembayaran_cetak' p.pk %}" target="_blank"><i class="ri-printer-line me-2"></i>Cetak Kwitansi</a>
+                                    {% if can_delete.sewa %}
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ p.pk }},'{{ p.nomor_pembayaran }}')" ><i class="ri-delete-bin-line me-2"></i>Hapus</a>
+                                    {% endif %}
                                 </div>
                             </div>
+                            {% elif can_view.sewa %}
+                            <a href="{% url 'sewa:pembayaran_detail' p.pk %}" class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</a>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

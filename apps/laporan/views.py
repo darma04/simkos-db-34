@@ -57,7 +57,9 @@ class LaporanPengeluaranView(TemplateView):
         end_date = self.request.GET.get('end_date', '')
         filter_kategori = self.request.GET.get('kategori', '')
 
-        qs = TransaksiBiaya.objects.select_related('kategori').all()
+        qs = TransaksiBiaya.objects.select_related('kategori').filter(
+            status='approved'
+        )
         if start_date:
             qs = qs.filter(tanggal__gte=start_date)
         if end_date:
@@ -135,25 +137,44 @@ class LaporanKeuanganView(TemplateView):
             pemasukan_qs = pemasukan_qs.filter(tanggal_bayar__lte=end_date)
         total_pemasukan = pemasukan_qs.aggregate(total=Sum('jumlah_bayar'))['total'] or 0
 
-        # Pengeluaran
-        pengeluaran_qs = TransaksiBiaya.objects.all()
+        # Pengeluaran (hanya yang sudah disetujui)
+        pengeluaran_qs = TransaksiBiaya.objects.filter(status='approved')
         if start_date:
             pengeluaran_qs = pengeluaran_qs.filter(tanggal__gte=start_date)
         if end_date:
             pengeluaran_qs = pengeluaran_qs.filter(tanggal__lte=end_date)
-        total_pengeluaran = pengeluaran_qs.aggregate(total=Sum('jumlah'))['total'] or 0
+        total_biaya = pengeluaran_qs.aggregate(total=Sum('jumlah'))['total'] or 0
+
+        # Pengeluaran tambahan: Gaji karyawan yang sudah dibayar
+        total_gaji = 0
+        gaji_qs = None
+        try:
+            from apps.hr.models import Penggajian
+            gaji_qs = Penggajian.objects.filter(status='dibayar').select_related('karyawan')
+            if start_date:
+                gaji_qs = gaji_qs.filter(tanggal_bayar__gte=start_date)
+            if end_date:
+                gaji_qs = gaji_qs.filter(tanggal_bayar__lte=end_date)
+            total_gaji = gaji_qs.aggregate(total=Sum('gaji_bersih'))['total'] or 0
+        except Exception:
+            pass
+
+        total_pengeluaran = total_biaya + total_gaji
 
         laba_bersih = total_pemasukan - total_pengeluaran
         margin = round((laba_bersih / total_pemasukan * 100), 1) if total_pemasukan > 0 else 0
 
         context['total_pemasukan'] = total_pemasukan
         context['total_pengeluaran'] = total_pengeluaran
+        context['total_biaya'] = total_biaya
+        context['total_gaji'] = total_gaji
         context['laba_bersih'] = laba_bersih
         context['margin_persen'] = margin
         context['total_trx_masuk'] = pemasukan_qs.count()
-        context['total_trx_keluar'] = pengeluaran_qs.count()
+        context['total_trx_keluar'] = pengeluaran_qs.count() + (gaji_qs.count() if gaji_qs is not None else 0)
         context['pemasukan_list'] = pemasukan_qs.order_by('-tanggal_bayar')
         context['pengeluaran_list'] = pengeluaran_qs.order_by('-tanggal')
+        context['gaji_list'] = gaji_qs.order_by('-tanggal_bayar') if gaji_qs is not None else []
         context['start_date'] = start_date
         context['end_date'] = end_date
         context['jenis_filter'] = jenis_filter

@@ -69,6 +69,11 @@ class TemplateLayout:
         # Ini mengisi context dengan: layout, hasCustomizer, navbarFull, dll
         context = TemplateHelper.init_context(context)
 
+        # Inject request ke context agar bisa diakses oleh layout bootstrap
+        # (diperlukan untuk RBAC menu filtering di init_menu_data)
+        if hasattr(self, 'request'):
+            context['request'] = self.request
+
         # Langkah 2: Ambil layout yang dipilih (misal: 'vertical')
         layout = context["layout"]
 

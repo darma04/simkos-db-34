@@ -35,9 +35,11 @@
             </h4>
             <p class="text-muted mb-0">Kelola data properti kost & kontrakan</p>
         </div>
+        {% if can_create.properti %}
         <a href="{% url 'properti:properti_add' %}" class="btn btn-primary">
             <i class="ri-add-line me-1"></i>Tambah Properti
         </a>
+        {% endif %}
     </div>
 
     <!-- Filter Card -->
@@ -176,23 +178,35 @@
                             {% else %}<span class="badge bg-label-danger">Nonaktif</span>{% endif %}
                         </td>
                         <td>
+                            {% if can_edit.properti or can_delete.properti %}
                             <div class="dropdown">
                                 <button type="button" class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                                     <i class="ri-more-2-line"></i>
                                 </button>
                                 <div class="dropdown-menu">
+                                    {% if can_view.properti %}
                                     <a class="dropdown-item" href="{% url 'properti:properti_detail' p.pk %}">
                                         <i class="ri-eye-line me-2"></i>Lihat Detail
                                     </a>
+                                    {% endif %}
+                                    {% if can_edit.properti %}
                                     <a class="dropdown-item" href="{% url 'properti:properti_edit' p.pk %}">
                                         <i class="ri-edit-line me-2"></i>Edit
                                     </a>
+                                    {% endif %}
+                                    {% if can_delete.properti %}
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete({{ p.pk }}, '{{ p.nama }}')">
                                         <i class="ri-delete-bin-line me-2"></i>Hapus
                                     </a>
+                                    {% endif %}
                                 </div>
                             </div>
+                            {% elif can_view.properti %}
+                            <a href="{% url 'properti:properti_detail' p.pk %}" class="badge bg-label-secondary"><i class="ri-eye-line me-1"></i>View Only</a>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

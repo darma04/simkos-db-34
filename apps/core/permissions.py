@@ -25,13 +25,17 @@
  - apps/core/models.py → RolePermission (sumber data permission)
  - apps/core/mixins.py → Mixin yang memanggil has_permission()
  - apps/core/context_processors.py → PermissionChecker yang membungkus ini
+ - apps/core/cache_utils.py → Versioned cache key untuk RBAC caching
  - Semua views → Menggunakan mixin/decorator dari file ini
 ==========================================================================
 """
 
 from functools import wraps                     # Untuk decorator yang mempertahankan metadata fungsi
+# Import dari framework Django
 from django.core.exceptions import PermissionDenied  # Exception 403 Forbidden
+# Import dari framework Django
 from django.shortcuts import redirect           # Fungsi redirect ke URL lain
+# Import dari framework Django
 from django.contrib import messages              # Framework pesan flash
 
 
@@ -62,10 +66,12 @@ def get_user_role(user):
     if user.is_superuser:
         return 'SUPERUSER'
 
+    # Blok penanganan error — coba jalankan kode di bawah
     try:
         # Ambil role dari Profile (via relasi OneToOne: user.profile)
         role = user.profile.role
         return role.upper() if role else 'USER'
+    # Tangkap error Exception — lanjutkan tanpa crash
     except Exception:
         # Jika profile belum ada (error), default ke 'USER'
         return 'USER'
@@ -84,8 +90,8 @@ def has_permission(user, action, module=None, sub_module=None):
     Return: True jika diizinkan, False jika ditolak
 
     OPTIMASI: Semua permission untuk sebuah role di-load sekali dari DB
-    dan di-cache selama 30 detik. Satu page load hanya 1 DB query,
-    bukan 20-40+ query seperti sebelumnya.
+    dan di-cache selama 5 menit dengan versioned cache key.
+    Saat permission berubah, versi cache di-bump → cache key lama invalid.
     """
     role = get_user_role(user)
 
@@ -98,6 +104,7 @@ def has_permission(user, action, module=None, sub_module=None):
 
     # Semua role lain → cek di cache permission
     if module:
+        # Blok penanganan error — coba jalankan kode di bawah
         try:
             # Normalisasi: 'access-control' → 'access_control' (sesuai format di DB)
             module_normalized = module.replace('-', '_').lower()
@@ -115,24 +122,37 @@ def has_permission(user, action, module=None, sub_module=None):
             if not perm_field:
                 return False
 
-            # Ambil cache permission (1 query per role, di-cache 30 detik)
+            # Ambil cache permission (1 query per role, di-cache 5 menit)
             perms_cache = _get_role_permissions_cache(role)
 
             # ===== CEK SUB-MODULE DULU (lebih spesifik) =====
             if sub_module:
                 sub_key = (module_normalized, sub_module.lower())
                 if sub_key in perms_cache:
-                    return perms_cache[sub_key].get(perm_field, False)
-                # Jika sub-module tidak ditemukan → fallback ke module level
+                    sub_value = perms_cache[sub_key].get(perm_field, False)
+                    if sub_value:
+                        return True
+                    # Sub-modul ada tapi permission False →
+                    # fallback ke module level (karena UI hanya set can_view untuk sub-modul)
 
             # ===== CEK MODULE LEVEL (fallback) =====
             mod_key = (module_normalized, None)
             if mod_key in perms_cache:
                 return perms_cache[mod_key].get(perm_field, False)
 
+            # ===== FALLBACK SUB-MODULE =====
+            # Jika user mengecek level modul, tapi database hanya punya record level sub-modul
+            # (karena checkbox UI hanya ada di level sub-modul), anggap True jika ADA minimal
+            # 1 sub-modul di modul ini yang memiliki permission tersebut.
+            if not sub_module:
+                for (mod, sub), perm_dict in perms_cache.items():
+                    if mod == module_normalized and sub is not None and perm_dict.get(perm_field, False):
+                        return True
+
             # Tidak ada permission record → DITOLAK
             return False
 
+        # Tangkap error Exception — lanjutkan tanpa crash
         except Exception as e:
             return False
 
@@ -144,15 +164,19 @@ def _get_role_permissions_cache(role):
     Load SEMUA permissions untuk sebuah role dalam 1 query dan cache.
 
     Return: Dictionary {(module, sub_module): {can_view, can_create, can_edit, can_delete}}
-    Cache TTL: 30 detik — balance antara performa dan freshness.
+    Cache TTL: 300 detik (5 menit) — aman karena menggunakan versioned cache key.
+    Saat permission berubah, cache_utils.bump_role_permissions_cache_version()
+    mengubah versi → cache key lama otomatis invalid.
     """
     from django.core.cache import cache
+    from apps.core.cache_utils import get_role_permissions_cache_key
 
-    cache_key = f'role_perms_{role}'
+    cache_key = get_role_permissions_cache_key(role)
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
+    # Import dari modul internal proyek
     from apps.core.models import RolePermission
     perms_dict = {}
 
@@ -172,7 +196,7 @@ def _get_role_permissions_cache(role):
             'can_delete': p['can_delete'],
         }
 
-    cache.set(cache_key, perms_dict, 30)  # Cache 30 detik
+    cache.set(cache_key, perms_dict, 300)  # Cache 5 menit (aman karena versioned)
     return perms_dict
 
 
@@ -192,7 +216,9 @@ def get_accessible_submodules(user, module):
     if role == 'SUPERUSER':
         return get_all_submodules_from_menu(module)
 
+    # Blok penanganan error — coba jalankan kode di bawah
     try:
+        # Import dari modul internal proyek
         from apps.core.models import RolePermission
 
         # Normalisasi nama modul
@@ -211,6 +237,7 @@ def get_accessible_submodules(user, module):
 
         return result
 
+    # Tangkap error Exception — lanjutkan tanpa crash
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -232,9 +259,16 @@ def get_all_submodules_from_menu(module):
     global _menu_cache
     import json
     import os
+    # Import dari framework Django
     from django.conf import settings
 
+    # Blok penanganan error — coba jalankan kode di bawah
     try:
+        # Reverse mapping: DB module → menu slug
+        MODULE_TO_SLUG = {
+            'user_management': 'users',
+        }
+
         # Cache menu data di memori (baca file hanya sekali)
         if _menu_cache is None:
             menu_path = os.path.join(
@@ -246,9 +280,11 @@ def get_all_submodules_from_menu(module):
 
         # Cari modul di menu (normalisasi dash dan underscore)
         module_norm = module.lower().replace('-', '_')
+        menu_slug_norm = MODULE_TO_SLUG.get(module_norm, module_norm)
+
         for item in _menu_cache.get('menu', []):
             item_slug_norm = item.get('slug', '').lower().replace('-', '_')
-            if item_slug_norm == module_norm and 'submenu' in item:
+            if (item_slug_norm == module_norm or item_slug_norm == menu_slug_norm) and 'submenu' in item:
                 # Ekstrak slug sub-modul dari submenu
                 subs = []
                 for sub_item in item['submenu']:
@@ -265,6 +301,7 @@ def get_all_submodules_from_menu(module):
 
         return []
 
+    # Tangkap error Exception — lanjutkan tanpa crash
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -278,6 +315,7 @@ def role_required(*allowed_roles):
 
     Cara pakai:
         @role_required('SUPERUSER', 'ADMIN')
+        # Fungsi my_view
         def my_view(request):
             ...
 
@@ -285,11 +323,6 @@ def role_required(*allowed_roles):
     1. Ambil role user
     2. Jika role ada di daftar yang diizinkan → lanjutkan ke view
     3. Jika tidak → tampilkan pesan error dan redirect ke dashboard
-
-    Apa itu Decorator?
-    - Fungsi yang membungkus fungsi lain
-    - Menambahkan logika sebelum/sesudah fungsi asli dijalankan
-    - @role_required('ADMIN') = role_required('ADMIN')(my_view)
     """
     def decorator(view_func):
         """Fungsi decorator — membungkus view function."""
@@ -303,6 +336,7 @@ def role_required(*allowed_roles):
             else:
                 # Role tidak diizinkan → tampilkan pesan error
                 messages.error(request, 'Anda tidak memiliki akses untuk halaman ini.')
+                # Redirect ke halaman tujuan
                 return redirect('dashboard:index')
         return wrapper
     return decorator
@@ -314,6 +348,7 @@ def permission_required(action, module=None):
 
     Cara pakai:
         @permission_required('create', 'produk')
+        # Fungsi add_product
         def add_product(request):
             ...
 
@@ -321,11 +356,6 @@ def permission_required(action, module=None):
     1. Cek has_permission(user, action, module)
     2. Jika True → lanjutkan ke view
     3. Jika False → tampilkan pesan error dan redirect
-
-    Perbedaan dengan role_required:
-    - role_required: cek APAKAH user punya role tertentu
-    - permission_required: cek APAKAH user punya AKSI tertentu di MODUL tertentu
-    - permission_required lebih granular dan fleksibel
     """
     def decorator(view_func):
         """Fungsi decorator — membungkus view function."""
@@ -343,7 +373,20 @@ def permission_required(action, module=None):
                     'delete': 'menghapus'
                 }
                 action_label = action_labels.get(action, action)
+                # Tampilkan pesan error ke user
                 messages.error(request, f'Anda tidak memiliki izin untuk {action_label} data ini.')
+                if (
+                    request.headers.get('x-requested-with') == 'XMLHttpRequest'
+                    or 'application/json' in request.headers.get('accept', '')
+                    or request.path.startswith('/api/')
+                    or '/api/' in request.path
+                ):
+                    from django.http import JsonResponse
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Anda tidak memiliki izin untuk {action_label} data ini.'
+                    }, status=403)
+                # Redirect ke halaman tujuan
                 return redirect('dashboard:index')
         return wrapper
     return decorator

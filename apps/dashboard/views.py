@@ -120,15 +120,17 @@ class DashboardView(TemplateView):
                 )
                 pengeluaran_qs = TransaksiBiaya.objects.filter(
                     tanggal__gte=start_date,
-                    tanggal__lte=end_date
-                ).exclude(status='rejected')
+                    tanggal__lte=end_date,
+                    status='approved'
+                )
             elif is_filtered and start_date:
                 pembayaran_qs = PembayaranSewa.objects.filter(
                     tanggal_bayar__gte=start_date
                 )
                 pengeluaran_qs = TransaksiBiaya.objects.filter(
-                    tanggal__gte=start_date
-                ).exclude(status='rejected')
+                    tanggal__gte=start_date,
+                    status='approved'
+                )
             else:
                 pembayaran_qs = PembayaranSewa.objects.filter(
                     tanggal_bayar__month=bulan_ini,
@@ -136,13 +138,40 @@ class DashboardView(TemplateView):
                 )
                 pengeluaran_qs = TransaksiBiaya.objects.filter(
                     tanggal__month=bulan_ini,
-                    tanggal__year=tahun_ini
-                ).exclude(status='rejected')
+                    tanggal__year=tahun_ini,
+                    status='approved'
+                )
 
             pemasukan_bulan_ini = pembayaran_qs.aggregate(
                 total=Sum('jumlah_bayar'))['total'] or 0
-            pengeluaran_bulan_ini = pengeluaran_qs.aggregate(
+            pengeluaran_biaya = pengeluaran_qs.aggregate(
                 total=Sum('jumlah'))['total'] or 0
+
+            # Tambahkan gaji karyawan yang sudah dibayar (konsisten dengan Laporan Keuangan)
+            try:
+                from apps.hr.models import Penggajian
+                if is_filtered and start_date and end_date:
+                    gaji_qs = Penggajian.objects.filter(
+                        status='dibayar',
+                        tanggal_bayar__gte=start_date,
+                        tanggal_bayar__lte=end_date,
+                    )
+                elif is_filtered and start_date:
+                    gaji_qs = Penggajian.objects.filter(
+                        status='dibayar',
+                        tanggal_bayar__gte=start_date,
+                    )
+                else:
+                    gaji_qs = Penggajian.objects.filter(
+                        status='dibayar',
+                        tanggal_bayar__month=bulan_ini,
+                        tanggal_bayar__year=tahun_ini,
+                    )
+                pengeluaran_gaji = gaji_qs.aggregate(total=Sum('gaji_bersih'))['total'] or 0
+            except Exception:
+                pengeluaran_gaji = 0
+
+            pengeluaran_bulan_ini = pengeluaran_biaya + pengeluaran_gaji
 
             # Tagihan belum bayar (filter by jatuh tempo jika ada filter)
             tagihan_pending_qs = TagihanSewa.objects.filter(
@@ -154,8 +183,14 @@ class DashboardView(TemplateView):
                     tanggal_jatuh_tempo__lte=end_date
                 )
             tagihan_pending = tagihan_pending_qs.count()
-            total_tagihan_pending = tagihan_pending_qs.aggregate(
-                total=Sum('jumlah'))['total'] or 0
+            # Hitung sisa tagihan = SUM(jumlah) - SUM(pembayaran) per tagihan, agregat dalam 2 query
+            from django.db.models import Sum as _Sum, F
+            total_jumlah_pending = tagihan_pending_qs.aggregate(t=_Sum('jumlah'))['t'] or 0
+            total_dibayar_pending = (
+                PembayaranSewa.objects.filter(tagihan__in=tagihan_pending_qs)
+                .aggregate(t=_Sum('jumlah_bayar'))['t'] or 0
+            )
+            total_tagihan_pending = total_jumlah_pending - total_dibayar_pending
 
             # Pembayaran terbaru (5) — filter jika ada date range
             pembayaran_terbaru_qs = PembayaranSewa.objects.select_related(
@@ -192,6 +227,24 @@ class DashboardView(TemplateView):
                           'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des']
             nama_hari = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 
+            # Helper: hitung pengeluaran (biaya approved + gaji dibayar) dalam rentang tanggal
+            try:
+                from apps.hr.models import Penggajian as _Penggajian
+            except Exception:
+                _Penggajian = None
+
+            def _hitung_pengeluaran_periode(filter_kwargs_biaya, filter_kwargs_gaji):
+                """Hitung total pengeluaran (TransaksiBiaya approved + Penggajian dibayar)."""
+                biaya = TransaksiBiaya.objects.filter(
+                    status='approved', **filter_kwargs_biaya
+                ).aggregate(total=Sum('jumlah'))['total'] or 0
+                gaji = 0
+                if _Penggajian is not None:
+                    gaji = _Penggajian.objects.filter(
+                        status='dibayar', **filter_kwargs_gaji
+                    ).aggregate(total=Sum('gaji_bersih'))['total'] or 0
+                return float(biaya) + float(gaji)
+
             # 1. Grafik Pemasukan & Pengeluaran (Agregasi Dinamis)
             chart_labels = []
             chart_pemasukan = []
@@ -218,12 +271,13 @@ class DashboardView(TemplateView):
                         pemasukan = PembayaranSewa.objects.filter(
                             tanggal_bayar=current_date
                         ).aggregate(total=Sum('jumlah_bayar'))['total'] or 0
-                        pengeluaran = TransaksiBiaya.objects.filter(
-                            tanggal=current_date
-                        ).exclude(status='rejected').aggregate(total=Sum('jumlah'))['total'] or 0
+                        pengeluaran = _hitung_pengeluaran_periode(
+                            {'tanggal': current_date},
+                            {'tanggal_bayar': current_date},
+                        )
 
                         chart_pemasukan.append(float(pemasukan))
-                        chart_pengeluaran.append(float(pengeluaran))
+                        chart_pengeluaran.append(pengeluaran)
                         current_date += timedelta(days=1)
                 else:
                     # ── AGREGASI BULANAN (filter > 62 hari) ──
@@ -246,13 +300,13 @@ class DashboardView(TemplateView):
                             tanggal_bayar__gte=month_start,
                             tanggal_bayar__lte=month_end
                         ).aggregate(total=Sum('jumlah_bayar'))['total'] or 0
-                        pengeluaran = TransaksiBiaya.objects.filter(
-                            tanggal__gte=month_start,
-                            tanggal__lte=month_end
-                        ).exclude(status='rejected').aggregate(total=Sum('jumlah'))['total'] or 0
+                        pengeluaran = _hitung_pengeluaran_periode(
+                            {'tanggal__gte': month_start, 'tanggal__lte': month_end},
+                            {'tanggal_bayar__gte': month_start, 'tanggal_bayar__lte': month_end},
+                        )
 
                         chart_pemasukan.append(float(pemasukan))
-                        chart_pengeluaran.append(float(pengeluaran))
+                        chart_pengeluaran.append(pengeluaran)
                         current_month += 1
                         if current_month > 12:
                             current_month = 1
@@ -271,13 +325,13 @@ class DashboardView(TemplateView):
                         tanggal_bayar__month=m,
                         tanggal_bayar__year=y
                     ).aggregate(total=Sum('jumlah_bayar'))['total'] or 0
-                    pengeluaran = TransaksiBiaya.objects.filter(
-                        tanggal__month=m,
-                        tanggal__year=y
-                    ).exclude(status='rejected').aggregate(total=Sum('jumlah'))['total'] or 0
+                    pengeluaran = _hitung_pengeluaran_periode(
+                        {'tanggal__month': m, 'tanggal__year': y},
+                        {'tanggal_bayar__month': m, 'tanggal_bayar__year': y},
+                    )
 
                     chart_pemasukan.append(float(pemasukan))
-                    chart_pengeluaran.append(float(pengeluaran))
+                    chart_pengeluaran.append(pengeluaran)
 
             # 2. Data Status Kamar (Donut Chart)
             chart_kamar_labels = json.dumps(['Tersedia', 'Terisi', 'Perbaikan'])

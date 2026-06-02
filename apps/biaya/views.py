@@ -344,3 +344,98 @@ class TransaksiBiayaPrintView(ReadPermissionMixin, TemplateView):
         context['perusahaan'] = PengaturanPerusahaan.load()
         context['template'] = TemplateCetak.get_template('expense')
         return context
+
+
+class TransaksiBiayaApproveView(UpdatePermissionMixin, TemplateView):
+    """
+    Approve (Setujui) transaksi biaya — ubah status ke 'approved'.
+    URL: /biaya/transaksi/<pk>/approve/
+    Method: POST (via AJAX)
+    """
+    template_name = 'biaya/transaksi_detail.html'
+    permission_module = 'biaya'
+
+    def post(self, request, *args, **kwargs):
+        """Proses approve transaksi biaya via AJAX POST."""
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+
+        transaksi = get_object_or_404(TransaksiBiaya, pk=kwargs['pk'])
+
+        # Validasi: hanya status draft/submitted yang bisa di-approve
+        if transaksi.status not in ['draft', 'submitted']:
+            return JsonResponse({
+                'success': False,
+                'message': f'Transaksi dengan status "{transaksi.get_status_display()}" tidak dapat disetujui.'
+            }, status=400)
+
+        # Simpan status lama untuk log
+        old_status = transaksi.get_status_display()
+
+        # Update status ke approved
+        transaksi.status = 'approved'
+        transaksi.disetujui_oleh = request.user
+        transaksi.save()
+
+        # Log activity
+        from apps.activity_log.middleware import ActivityLogMiddleware
+        ActivityLogMiddleware.log_activity(
+            request,
+            action='update',
+            model_name='Transaksi Biaya',
+            object_id=transaksi.pk,
+            object_repr=str(transaksi),
+            description=f'Menyetujui transaksi biaya: {transaksi.nomor_transaksi} (status: {old_status} → Disetujui)'
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Transaksi biaya {transaksi.nomor_transaksi} berhasil disetujui.'
+        })
+
+
+class TransaksiBiayaRejectView(UpdatePermissionMixin, TemplateView):
+    """
+    Reject (Tolak) transaksi biaya — ubah status ke 'rejected'.
+    URL: /biaya/transaksi/<pk>/reject/
+    Method: POST (via AJAX)
+    """
+    template_name = 'biaya/transaksi_detail.html'
+    permission_module = 'biaya'
+
+    def post(self, request, *args, **kwargs):
+        """Proses reject transaksi biaya via AJAX POST."""
+        from django.http import JsonResponse
+        from django.shortcuts import get_object_or_404
+
+        transaksi = get_object_or_404(TransaksiBiaya, pk=kwargs['pk'])
+
+        # Validasi: hanya status draft/submitted yang bisa di-reject
+        if transaksi.status not in ['draft', 'submitted']:
+            return JsonResponse({
+                'success': False,
+                'message': f'Transaksi dengan status "{transaksi.get_status_display()}" tidak dapat ditolak.'
+            }, status=400)
+
+        # Simpan status lama untuk log
+        old_status = transaksi.get_status_display()
+
+        # Update status ke rejected
+        transaksi.status = 'rejected'
+        transaksi.save()
+
+        # Log activity
+        from apps.activity_log.middleware import ActivityLogMiddleware
+        ActivityLogMiddleware.log_activity(
+            request,
+            action='update',
+            model_name='Transaksi Biaya',
+            object_id=transaksi.pk,
+            object_repr=str(transaksi),
+            description=f'Menolak transaksi biaya: {transaksi.nomor_transaksi} (status: {old_status} → Ditolak)'
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Transaksi biaya {transaksi.nomor_transaksi} berhasil ditolak.'
+        })

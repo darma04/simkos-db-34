@@ -25,6 +25,15 @@
     {% endfor %}
     {% endif %}
 
+    <!-- UI Gating: Read-Only Alert -->
+    {% if not can_edit.pengaturan.perusahaan %}
+    <div class="alert alert-warning alert-dismissible mb-4" role="alert">
+        <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
+        <p class="mb-0">Anda hanya memiliki akses untuk melihat pengaturan perusahaan. Form telah dinonaktifkan.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <!-- Single Form for All Settings -->
     <form method="POST" enctype="multipart/form-data" id="formPerusahaan">
         {% csrf_token %}
@@ -168,6 +177,61 @@
                                 <div class="invalid-feedback d-block">{{ form.system_favicon.errors.0 }}</div>
                                 {% endif %}
                                 <small class="text-muted d-block mt-1">Icon tab browser. 32x32px atau .ico</small>
+                            </div>
+                            <div class="mb-3 col-md-6">
+                                <label for="{{ form.auth_image.id_for_label }}" class="form-label">Upload Ilustrasi Autentikasi (Kiri)</label>
+                                {% if object.auth_image %}
+                                <div class="mb-2">
+                                    <img src="{{ object.auth_image.url }}" alt="Auth Image" class="rounded border" style="max-height: 50px;">
+                                </div>
+                                {% endif %}
+                                {{ form.auth_image }}
+                                {% if form.auth_image.errors %}
+                                <div class="invalid-feedback d-block">{{ form.auth_image.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted d-block mt-1">Gambar utama login/register (transparan). Format: PNG</small>
+                            </div>
+
+                            <div class="mb-3 col-md-6">
+                                <label for="{{ form.auth_background_image.id_for_label }}" class="form-label">Upload Background Mask Autentikasi</label>
+                                {% if object.auth_background_image %}
+                                <div class="mb-2">
+                                    <img src="{{ object.auth_background_image.url }}" alt="Auth BG Mask" class="rounded border" style="max-height: 50px;">
+                                </div>
+                                {% endif %}
+                                {{ form.auth_background_image }}
+                                {% if form.auth_background_image.errors %}
+                                <div class="invalid-feedback d-block">{{ form.auth_background_image.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted d-block mt-1">Background shape Auth. Format: SVG/PNG transparan</small>
+                            </div>
+
+                            <div class="mb-3 col-md-6">
+                                <label for="{{ form.misc_image.id_for_label }}" class="form-label">Upload Ilustrasi Error/Maintenance</label>
+                                {% if object.misc_image %}
+                                <div class="mb-2">
+                                    <img src="{{ object.misc_image.url }}" alt="Misc Image" class="rounded border" style="max-height: 50px;">
+                                </div>
+                                {% endif %}
+                                {{ form.misc_image }}
+                                {% if form.misc_image.errors %}
+                                <div class="invalid-feedback d-block">{{ form.misc_image.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted d-block mt-1">Gambar halaman rupa-rupa. Format: PNG</small>
+                            </div>
+
+                            <div class="mb-3 col-md-6">
+                                <label for="{{ form.misc_background_image.id_for_label }}" class="form-label">Upload Background Error/Maintenance</label>
+                                {% if object.misc_background_image %}
+                                <div class="mb-2">
+                                    <img src="{{ object.misc_background_image.url }}" alt="Misc BG Mask" class="rounded border" style="max-height: 50px;">
+                                </div>
+                                {% endif %}
+                                {{ form.misc_background_image }}
+                                {% if form.misc_background_image.errors %}
+                                <div class="invalid-feedback d-block">{{ form.misc_background_image.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted d-block mt-1">Background shape halaman rupa-rupa. Format: SVG/PNG</small>
                             </div>
                             <div class="mb-3 col-md-12">
                                 <div class="form-check form-switch">
@@ -363,9 +427,11 @@
             <div class="col-md-12">
                 <div class="card mb-4">
                     <div class="card-body">
+                        {% if can_edit.pengaturan.perusahaan %}
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="ri-save-line me-1"></i>Simpan Semua Pengaturan
                         </button>
+                        {% endif %}
                         <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">Batal</a>
                     </div>
                 </div>
@@ -388,6 +454,19 @@
      * 4. Template Email (header, footer, forgot password, register)
      * ==========================================================================
      */
+    
+    // ====== UI GATING: READ-ONLY MODE ======
+    {% if not can_edit.pengaturan.perusahaan %}
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById('formPerusahaan');
+        if(form) {
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.setAttribute('disabled', 'disabled');
+            });
+        }
+    });
+    {% endif %}
 
     /**
      * Helper: Tambah class ke elemen berdasarkan ID (aman jika elemen tidak ada)
@@ -429,6 +508,10 @@
     tambahClass('id_system_keywords', 'form-control');
     tambahClass('id_system_logo', 'form-control');
     tambahClass('id_system_favicon', 'form-control');
+    tambahClass('id_auth_image', 'form-control');
+    tambahClass('id_auth_background_image', 'form-control');
+    tambahClass('id_misc_image', 'form-control');
+    tambahClass('id_misc_background_image', 'form-control');
     // Checkbox maintenance mode — gunakan class form-check-input untuk styling Bootstrap
     tambahClass('id_maintenance_mode', 'form-check-input');
     tambahClass('id_maintenance_message', 'form-control');
@@ -455,4 +538,28 @@
     tambahClass('id_register_message', 'form-control');
     setAttr('id_register_message', 'rows', 6); // Textarea lebih tinggi
 </script>
+
+    <!-- Auto-Injected UI Disabler Script -->
+    {% if not can_edit.pengaturan.perusahaan %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            const saveBtns = document.querySelectorAll('button[type="submit"]');
+            saveBtns.forEach(btn => {
+                btn.style.display = 'none';
+            });
+            const dropzones = document.querySelectorAll('.dropzone, .account-file-input, .account-image-reset, .btn-primary, .btn-outline-danger');
+            dropzones.forEach(el => {
+                if (el.tagName !== 'BUTTON' && !el.classList.contains('btn-close') && !el.classList.contains('btn-label-secondary') && !el.classList.contains('btn-outline-secondary')) {
+                   el.classList.add('disabled');
+                   el.style.pointerEvents = 'none';
+                }
+            });
+        });
+    </script>
+    {% endif %}
+
 {% endblock content %}

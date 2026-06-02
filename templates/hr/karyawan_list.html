@@ -1,4 +1,4 @@
-{% extends 'layout/layout_vertical.html' %}
+﻿{% extends 'layout/layout_vertical.html' %}
 {% comment %}
 ==========================================================================
    KARYAWAN LIST - Daftar Karyawan
@@ -180,7 +180,7 @@
                         <td><code>{{ karyawan.nik }}</code></td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-2 flex-shrink-0 {% if not karyawan.foto %}bg-label-primary{% endif %}">
+                                <div class="avatar avatar-sm me-2 flex-shrink-0">
                                     {% if karyawan.foto %}
                                     <img src="{{ karyawan.foto.url }}" alt="{{ karyawan.nama }}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
                                     {% else %}

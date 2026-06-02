@@ -25,6 +25,14 @@
     {% endfor %}
     {% endif %}
 
+    {% if not can_edit.pengaturan.profil %}
+    <div class="alert alert-warning alert-dismissible mb-4" role="alert">
+        <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
+        <p class="mb-0">Anda tidak memiliki permission untuk mengedit profil. Semua form dinonaktifkan.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <div class="row">
         <div class="col-md-12">
             <div class="card mb-4">
@@ -40,13 +48,13 @@
                                 class="d-block w-px-100 h-px-100 rounded" id="uploadedAvatar" 
                                 style="object-fit: cover;" />
                             <div class="button-wrapper">
-                                <label for="avatar" class="btn btn-primary me-2 mb-3" tabindex="0">
+                                <label for="avatar" class="btn btn-primary me-2 mb-3 {% if not can_edit.pengaturan.profil %}disabled{% endif %}" tabindex="0">
                                     <span class="d-none d-sm-block"><i class="ri-upload-2-line me-1"></i>Upload Foto</span>
                                     <i class="ri-upload-2-line d-block d-sm-none"></i>
-                                    <input type="file" id="avatar" name="avatar" class="account-file-input" hidden accept="image/png, image/jpeg, image/gif" />
+                                    <input type="file" id="avatar" name="avatar" class="account-file-input" hidden accept="image/png, image/jpeg, image/gif" {% if not can_edit.pengaturan.profil %}disabled{% endif %} />
                                 </label>
                                 {% if profile.avatar %}
-                                <button type="button" class="btn btn-outline-danger account-image-reset mb-3" id="resetAvatar">
+                                <button type="button" class="btn btn-outline-danger account-image-reset mb-3 {% if not can_edit.pengaturan.profil %}disabled{% endif %}" id="resetAvatar">
                                     <i class="ri-refresh-line d-block d-sm-none"></i>
                                     <span class="d-none d-sm-block">Hapus Foto</span>
                                 </button>
@@ -62,22 +70,22 @@
                             <div class="mb-3 col-md-6">
                                 <label for="first_name" class="form-label">Nama Depan</label>
                                 <input type="text" class="form-control" id="first_name" name="first_name" 
-                                    value="{{ user.first_name }}" placeholder="Nama depan">
+                                    value="{{ user.first_name }}" placeholder="Nama depan" {% if not can_edit.pengaturan.profil %}disabled{% endif %}>
                             </div>
                             <div class="mb-3 col-md-6">
                                 <label for="last_name" class="form-label">Nama Belakang</label>
                                 <input type="text" class="form-control" id="last_name" name="last_name" 
-                                    value="{{ user.last_name }}" placeholder="Nama belakang">
+                                    value="{{ user.last_name }}" placeholder="Nama belakang" {% if not can_edit.pengaturan.profil %}disabled{% endif %}>
                             </div>
                             <div class="mb-3 col-md-6">
                                 <label for="email" class="form-label">E-mail</label>
                                 <input type="email" class="form-control" id="email" name="email" 
-                                    value="{{ user.email }}" placeholder="email@example.com">
+                                    value="{{ user.email }}" placeholder="email@example.com" {% if not can_edit.pengaturan.profil %}disabled{% endif %}>
                             </div>
                             <div class="mb-3 col-md-6">
                                 <label for="phone" class="form-label">Nomor Telepon</label>
                                 <input type="text" class="form-control" id="phone" name="phone" 
-                                    value="{{ profile.phone|default:'' }}" placeholder="08xx-xxxx-xxxx">
+                                    value="{{ profile.phone|default:'' }}" placeholder="08xx-xxxx-xxxx" {% if not can_edit.pengaturan.profil %}disabled{% endif %}>
                             </div>
                             <div class="mb-3 col-md-6">
                                 <label class="form-label">Username</label>
@@ -90,9 +98,11 @@
                             </div>
                         </div>
                         <div class="mt-2">
+                            {% if can_edit.pengaturan.profil %}
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-save-line me-1"></i>Simpan Perubahan
                             </button>
+                            {% endif %}
                             <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">Batal</a>
                         </div>
                     </form>
@@ -102,6 +112,30 @@
         </div>
     </div>
 </div>
+
+    <!-- Auto-Injected UI Disabler Script -->
+    {% if not can_edit.pengaturan.profil %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            const saveBtns = document.querySelectorAll('button[type="submit"]');
+            saveBtns.forEach(btn => {
+                btn.style.display = 'none';
+            });
+            const dropzones = document.querySelectorAll('.dropzone, .account-file-input, .account-image-reset, .btn-primary, .btn-outline-danger');
+            dropzones.forEach(el => {
+                if (el.tagName !== 'BUTTON' && !el.classList.contains('btn-close') && !el.classList.contains('btn-label-secondary') && !el.classList.contains('btn-outline-secondary')) {
+                   el.classList.add('disabled');
+                   el.style.pointerEvents = 'none';
+                }
+            });
+        });
+    </script>
+    {% endif %}
+
 {% endblock content %}
 
 {% block page_js %}

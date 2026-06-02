@@ -67,7 +67,7 @@
                             <h5 class="mb-1">{{ role.name }}</h5>
                             {% if role.code == 'SUPERUSER' %}
                             <small class="text-muted">Akses penuh (Tidak dapat diedit)</small>
-                            {% else %}
+                            {% elif can_edit.access_control %}
                             <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#editRoleModal"
                                 data-role-code="{{ role.code }}" class="role-edit-link">
                                 <small>Edit Role</small>
@@ -114,6 +114,7 @@
         {% endfor %}
 
         <!-- Add New Role Card -->
+        {% if can_create.access_control %}
         <div class="col-xl-4 col-lg-6 col-md-6">
             <div class="card h-100" style="border: 2px dashed rgba(var(--bs-primary-rgb), 0.2) !important;">
                 <div class="row h-100">
@@ -130,6 +131,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Users Table -->

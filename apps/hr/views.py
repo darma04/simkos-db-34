@@ -1144,7 +1144,7 @@ class GeneratePenggajianView(CreatePermissionMixin, TemplateView):
                     karyawan=karyawan,
                     periode_bulan=bulan,
                     periode_tahun=tahun,
-                    gaji_pokok=karyawan.gaji_pokok or karyawan.jabatan.gaji_pokok,
+                    gaji_pokok=karyawan.gaji_pokok or (karyawan.jabatan.gaji_pokok if karyawan.jabatan else 0),
                     tunjangan_jabatan=karyawan.jabatan.tunjangan_jabatan if karyawan.jabatan else 0,
                     tunjangan_makan=tunjangan_makan,
                     tunjangan_transport=tunjangan_transport,
@@ -1177,17 +1177,36 @@ class PenggajianUpdateStatusView(UpdatePermissionMixin, UpdateView):
 
     URL: /hr/penggajian/<pk>/update-status/
     Permission: hr.edit
-    Fields: status, tanggal_bayar
+    Fields: status, tanggal_bayar, metode_pembayaran
     Redirect: /hr/penggajian/
+
+    ⚠ PENTING: Saat status diubah ke 'dibayar', metode_pembayaran WAJIB diisi
+    agar saldo MetodePembayaran berkurang dan masuk ke laporan keuangan.
     """
     model = Penggajian
-    fields = ['status', 'tanggal_bayar']            # Hanya 2 field yang bisa diubah
+    fields = ['status', 'tanggal_bayar', 'metode_pembayaran']  # 3 field yang bisa diubah
     success_url = reverse_lazy('hr:penggajian')
     permission_module = 'hr'
 
 
     def form_valid(self, form):
-        """Update status penggajian."""
+        """Update status penggajian. Validasi metode_pembayaran wajib jika status='dibayar'."""
+        instance = form.save(commit=False)
+
+        # Validasi: jika status 'dibayar', metode_pembayaran wajib diisi
+        if instance.status == 'dibayar' and not instance.metode_pembayaran:
+            form.add_error(
+                'metode_pembayaran',
+                'Metode pembayaran wajib diisi saat status diubah ke Dibayar.'
+            )
+            return self.form_invalid(form)
+
+        # Validasi: jika status 'dibayar', tanggal_bayar wajib diisi
+        if instance.status == 'dibayar' and not instance.tanggal_bayar:
+            from datetime import date
+            instance.tanggal_bayar = date.today()
+
+        instance.save()
         messages.success(self.request, 'Status penggajian berhasil diupdate')
         return super().form_valid(form)
 

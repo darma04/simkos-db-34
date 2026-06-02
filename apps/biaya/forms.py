@@ -31,11 +31,12 @@ class TransaksiBiayaForm(forms.ModelForm):
 
     class Meta:
         model = TransaksiBiaya
-        fields = ['tanggal', 'kategori', 'jumlah', 'metode_pembayaran', 'deskripsi', 'bukti']
+        fields = ['tanggal', 'kategori', 'jumlah', 'metode_pembayaran', 'status', 'deskripsi', 'bukti']
         widgets = {
             'tanggal': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'kategori': forms.Select(attrs={'class': 'form-select'}),
             'jumlah': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'deskripsi': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'bukti': forms.FileInput(attrs={'class': 'form-control'}),
         }
@@ -44,6 +45,7 @@ class TransaksiBiayaForm(forms.ModelForm):
             'kategori': 'Kategori Biaya',
             'jumlah': 'Jumlah (Rp)',
             'metode_pembayaran': 'Metode Pembayaran',
+            'status': 'Status',
             'deskripsi': 'Deskripsi/Keterangan',
             'bukti': 'Upload Bukti (Foto/PDF)',
         }

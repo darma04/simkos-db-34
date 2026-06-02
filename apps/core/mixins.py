@@ -110,6 +110,41 @@ class SubModulePermissionMixin:
         # Permission diizinkan → lanjutkan ke view asli
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        """Inject RBAC variables into context for global UI gating."""
+        context = {}
+        if hasattr(super(), 'get_context_data'):
+            context = super().get_context_data(**kwargs)
+        
+        context['rbac_current_module'] = self.permission_module
+        context['rbac_current_sub_module'] = self.permission_sub_module
+        
+        user = getattr(self.request, 'user', None)
+        if user and not user.is_superuser:
+            context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
+            context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
+            context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module, self.permission_sub_module)
+            context['rbac_can_delete'] = has_permission(user, 'delete', self.permission_module, self.permission_sub_module)
+        else:
+            context['rbac_can_read'] = context['rbac_can_create'] = context['rbac_can_edit'] = context['rbac_can_delete'] = True
+            
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Ensure POST requests explicitly call the delete() method if this is a DeleteView.
+        Django 4.0+ DeletionMixin.post() uses FormMixin.form_valid() instead
+        of directly calling delete(). This breaks custom AJAX delete() implementations.
+        """
+        # Hack to bypass form_valid for ajax delete views
+        if hasattr(self, 'delete') and getattr(self, 'object', None) is None and 'delete' in request.path:
+            return self.delete(request, *args, **kwargs)
+        if hasattr(super(), 'post'):
+            return super().post(request, *args, **kwargs)
+        # Fallback if no post method
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET', 'POST'])
+
 
 class ModulePermissionMixin:
     """
@@ -154,6 +189,26 @@ class ModulePermissionMixin:
             return redirect(self.permission_redirect_url)
 
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Inject RBAC variables into context for global UI gating."""
+        context = {}
+        if hasattr(super(), 'get_context_data'):
+            context = super().get_context_data(**kwargs)
+        
+        context['rbac_current_module'] = self.permission_module
+        context['rbac_current_sub_module'] = None
+        
+        user = getattr(self.request, 'user', None)
+        if user and not user.is_superuser:
+            context['rbac_can_read'] = has_permission(user, 'read', self.permission_module)
+            context['rbac_can_create'] = has_permission(user, 'create', self.permission_module)
+            context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module)
+            context['rbac_can_delete'] = has_permission(user, 'delete', self.permission_module)
+        else:
+            context['rbac_can_read'] = context['rbac_can_create'] = context['rbac_can_edit'] = context['rbac_can_delete'] = True
+            
+        return context
 
 
 # ==================== MIXIN LEGACY (Backward Compatibility) ====================
@@ -218,6 +273,28 @@ class ReadPermissionMixin:
 
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        """Inject RBAC variables into context for global UI gating."""
+        context = {}
+        if hasattr(super(), 'get_context_data'):
+            context = super().get_context_data(**kwargs)
+        
+        context['rbac_current_module'] = self.permission_module
+        context['rbac_current_sub_module'] = self.permission_sub_module
+        
+        user = getattr(self.request, 'user', None)
+        if user and not user.is_superuser:
+            context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
+            context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
+            context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module, self.permission_sub_module)
+            context['rbac_can_delete'] = has_permission(user, 'delete', self.permission_module, self.permission_sub_module)
+            context['is_readonly_mode'] = not context['rbac_can_edit']
+        else:
+            context['rbac_can_read'] = context['rbac_can_create'] = context['rbac_can_edit'] = context['rbac_can_delete'] = True
+            context['is_readonly_mode'] = False
+            
+        return context
+
 
 class CreatePermissionMixin:
     """
@@ -266,6 +343,38 @@ class UpdatePermissionMixin:
 
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        """Inject RBAC variables into context for global UI gating."""
+        context = {}
+        if hasattr(super(), 'get_context_data'):
+            context = super().get_context_data(**kwargs)
+        
+        context['rbac_current_module'] = self.permission_module
+        context['rbac_current_sub_module'] = self.permission_sub_module
+        
+        user = getattr(self.request, 'user', None)
+        if user and not user.is_superuser:
+            context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
+            context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
+            context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module, self.permission_sub_module)
+            context['rbac_can_delete'] = has_permission(user, 'delete', self.permission_module, self.permission_sub_module)
+            context['is_readonly_mode'] = not context['rbac_can_edit']
+        else:
+            context['rbac_can_read'] = context['rbac_can_create'] = context['rbac_can_edit'] = context['rbac_can_delete'] = True
+            context['is_readonly_mode'] = False
+            
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            if not has_permission(request.user, 'write', self.permission_module, self.permission_sub_module):
+                module_name = self.permission_sub_module or self.permission_module
+                raise PermissionDenied(f'Anda tidak memiliki akses untuk mengubah data di {module_name.title()}')
+        if hasattr(super(), 'post'):
+            return super().post(request, *args, **kwargs)
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET', 'POST'])
+
 
 class DeletePermissionMixin:
     """
@@ -289,3 +398,37 @@ class DeletePermissionMixin:
             raise PermissionDenied(f'Anda tidak memiliki akses untuk menghapus data di {module_name.title()}')
 
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Inject RBAC variables into context for global UI gating."""
+        context = {}
+        if hasattr(super(), 'get_context_data'):
+            context = super().get_context_data(**kwargs)
+        
+        context['rbac_current_module'] = self.permission_module
+        context['rbac_current_sub_module'] = self.permission_sub_module
+        
+        user = getattr(self.request, 'user', None)
+        if user and not user.is_superuser:
+            context['rbac_can_read'] = has_permission(user, 'read', self.permission_module, self.permission_sub_module)
+            context['rbac_can_create'] = has_permission(user, 'create', self.permission_module, self.permission_sub_module)
+            context['rbac_can_edit'] = has_permission(user, 'write', self.permission_module, self.permission_sub_module)
+            context['rbac_can_delete'] = has_permission(user, 'delete', self.permission_module, self.permission_sub_module)
+            context['is_readonly_mode'] = not context['rbac_can_edit']
+        else:
+            context['rbac_can_read'] = context['rbac_can_create'] = context['rbac_can_edit'] = context['rbac_can_delete'] = True
+            context['is_readonly_mode'] = False
+            
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            if not has_permission(request.user, 'delete', self.permission_module, self.permission_sub_module):
+                module_name = self.permission_sub_module or self.permission_module
+                raise PermissionDenied(f'Anda tidak memiliki akses untuk menghapus data di {module_name.title()}')
+        if hasattr(super(), 'post'):
+            return super().post(request, *args, **kwargs)
+        if hasattr(self, 'delete'):
+            return self.delete(request, *args, **kwargs)
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(['GET', 'POST'])

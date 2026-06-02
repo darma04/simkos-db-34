@@ -24,13 +24,52 @@
 
  Koneksi:
  - django.core.cache → Backend cache (default: LocMemCache di settings.py)
- - apps/core/permissions.py → Bisa menggunakan decorator cache_user_permissions
+ - apps/core/permissions.py → _get_role_permissions_cache() menggunakan get_role_permissions_cache_key()
  - auth/models.py → Profile (untuk mendapatkan user_id per role)
 ==========================================================================
 """
 
+# Import dari framework Django
 from django.core.cache import cache  # Framework cache bawaan Django
 from functools import wraps          # Untuk decorator yang mempertahankan metadata
+
+
+def normalize_role_code(role_code):
+    """Normalisasi kode role agar cache key konsisten lintas UI, mixin, dan gating."""
+    return str(role_code or '').strip().upper()
+
+
+def get_user_permissions_cache_version(user_id):
+    """Ambil versi cache permission user untuk membuat cache key yang bisa di-invalidasi."""
+    return cache.get(f'user_perms_version_{user_id}', 1)
+
+
+def bump_user_permissions_cache_version(user_id):
+    """Naikkan versi cache permission user tanpa perlu delete by pattern."""
+    cache_version_key = f'user_perms_version_{user_id}'
+    current_version = cache.get(cache_version_key, 1)
+    cache.set(cache_version_key, current_version + 1, None)
+
+
+def get_role_permissions_cache_version(role_code):
+    """Ambil versi cache permission role."""
+    role = normalize_role_code(role_code)
+    return cache.get(f'role_perms_version_{role}', 1)
+
+
+def bump_role_permissions_cache_version(role_code):
+    """Naikkan versi cache permission role agar permission/menu gating langsung refresh."""
+    role = normalize_role_code(role_code)
+    cache_version_key = f'role_perms_version_{role}'
+    current_version = cache.get(cache_version_key, 1)
+    cache.set(cache_version_key, current_version + 1, None)
+
+
+def get_role_permissions_cache_key(role_code):
+    """Cache key utama RolePermission yang dipakai has_permission dan sidebar gating."""
+    role = normalize_role_code(role_code)
+    version = get_role_permissions_cache_version(role)
+    return f'role_perms_{role}_v{version}'
 
 
 def cache_user_permissions(timeout=300):  # 300 detik = 5 menit
@@ -43,12 +82,13 @@ def cache_user_permissions(timeout=300):  # 300 detik = 5 menit
 
     Cara pakai:
         @cache_user_permissions()
+        # Fungsi get_user_permissions
         def get_user_permissions(user):
             # Query database yang mahal
             ...
 
     Cara kerja:
-    1. Buat cache key unik berdasarkan: user ID + nama fungsi + arguments
+    1. Buat cache key unik berdasarkan: user ID + versi + nama fungsi + arguments
     2. Cek apakah hasil sudah ada di cache
     3. Jika ada (cache hit) → kembalikan langsung (tanpa query DB)
     4. Jika tidak ada (cache miss) → jalankan fungsi, simpan hasilnya di cache
@@ -62,10 +102,11 @@ def cache_user_permissions(timeout=300):  # 300 detik = 5 menit
             if not user or not user.is_authenticated:
                 return func(user, *args, **kwargs)
 
-            # Buat cache key unik
-            # Format: 'user_perms_{user_id}_{nama_fungsi}_{arg1-arg2-...}'
-            # Contoh: 'user_perms_1_has_permission_read-produk-kategori'
-            cache_key = f'user_perms_{user.id}_{func.__name__}_{"-".join(map(str, args))}'
+            # Buat cache key unik dengan versioning
+            # Format: 'user_perms_{user_id}_v{version}_{nama_fungsi}_{arg1-arg2-...}'
+            # Contoh: 'user_perms_1_v3_has_permission_read-produk-kategori'
+            version = get_user_permissions_cache_version(user.id)
+            cache_key = f'user_perms_{user.id}_v{version}_{func.__name__}_{"-".join(map(str, args))}'
 
             # Cek cache
             result = cache.get(cache_key)
@@ -99,9 +140,8 @@ def invalidate_user_permissions_cache(user_id):
     - Contoh: tidak bisa hapus semua key yang dimulai dengan 'user_perms_1_*'
     - Jadi kita gunakan version number sebagai workaround
     """
-    cache_version_key = f'user_perms_version_{user_id}'
-    current_version = cache.get(cache_version_key, 0)
-    cache.set(cache_version_key, current_version + 1)
+    if user_id:
+        bump_user_permissions_cache_version(user_id)
 
 
 def invalidate_role_permissions_cache(role_code):
@@ -111,18 +151,27 @@ def invalidate_role_permissions_cache(role_code):
     - Permission role diupdate (contoh: ADMIN sekarang bisa akses modul baru)
 
     Alur:
-    1. Cari semua user yang punya role ini (dari Profile.role)
-    2. Invalidate cache masing-masing user
+    1. Bump versi cache role → cache key lama invalid
+    2. Hapus cache key lama (kompatibilitas)
+    3. Cari semua user yang punya role ini (dari Profile.role)
+    4. Invalidate cache masing-masing user
 
     Parameter:
     - role_code: Kode role (contoh: 'ADMIN', 'KASIR')
     """
     from auth.models import Profile
-    from django.contrib.auth.models import User
 
-    # Cari semua user_id yang punya role ini
-    user_ids = Profile.objects.filter(role=role_code).values_list('user_id', flat=True)
+    role = normalize_role_code(role_code)
+
+    # Putus cache role-level lama dan baru. Delete key lama menjaga kompatibilitas
+    # dengan cache yang dibuat sebelum versi cache diperkenalkan.
+    bump_role_permissions_cache_version(role)
+    for candidate in {role, role.lower(), str(role_code or '').strip()}:
+        if candidate:
+            cache.delete(f'role_perms_{candidate}')
 
     # Invalidate cache untuk setiap user
+    # Cari semua user_id yang punya role ini
+    user_ids = Profile.objects.filter(role__iexact=role).values_list('user_id', flat=True)
     for user_id in user_ids:
         invalidate_user_permissions_cache(user_id)
