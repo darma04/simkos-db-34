@@ -277,36 +277,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div>
-                                    <strong>RINGKASAN</strong>
-                                    <br><small class="text-muted">{{ total_slip|default:0 }} Slip Gaji</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-primary" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_gaji_pokok|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Gaji Pokok</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-info" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_tunjangan|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Tunjangan</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-danger" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_potongan|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Potongan</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-success" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ grand_total|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Gaji Bersih</small>
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

@@ -130,24 +130,6 @@
                     <td>-</td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr class="table-footer-summary">
-                        <td class="text-start ps-4 py-3">
-                            <strong>RINGKASAN</strong><br>
-                            <small class="text-muted">{{ total_tipe }} Tipe Kamar</small>
-                        </td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-info">Rp {{ total_harga|floatformat:0|intcomma }}</span><br>
-                            <small class="text-muted">Total Harga</small>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3 text-center">
-                            <span class="badge bg-label-success">{{ tipe_aktif }}</span><br>
-                            <small class="text-muted">Tipe Aktif</small>
-                        </td>
-                        <td class="py-3"></td>
-                    <td class="py-3"></td></tr>
-                </tfoot>
             </table>
         </div>
     </div>

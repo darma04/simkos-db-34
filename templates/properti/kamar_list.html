@@ -149,19 +149,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ total_kamar }} Kamar | Tersedia: {{ kamar_tersedia }} | Terisi: {{ kamar_terisi }}</small></div></div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3 text-center" style="vertical-align: middle;">
-                            <span class="badge bg-label-primary" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">Rp {{ total_harga|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Total Harga</small>
-                        </td>
-                        <td class="py-3"></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

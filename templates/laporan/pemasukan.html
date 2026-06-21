@@ -118,15 +118,6 @@
                     <tr><td class="fw-medium">{{ b.nomor_pembayaran }}</td><td>{{ b.tagihan.kontrak.penyewa.nama }}</td><td>{{ b.tanggal_bayar|date:"d/m/Y" }}</td><td class="fw-bold text-success">Rp {{ b.jumlah_bayar|floatformat:0|intcomma }}</td><td><span class="badge bg-label-info rounded-pill">{{ b.nama_metode_bayar }}</span></td></tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi }} Transaksi</small></div></div>
-                        </td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;"><i class="ri-money-dollar-circle-line"></i><span>Rp {{ total_pemasukan|floatformat:0|intcomma }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Pemasukan</small></div></td>
-                        <td class="py-3"></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

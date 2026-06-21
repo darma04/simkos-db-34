@@ -260,23 +260,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="8" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center justify-content-start">
-                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
-                                <div class="text-start">
-                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
-                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi_biaya }} Transaksi Biaya</small>
-                                </div>
-                            </div>
-                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="py-3 text-center" style="vertical-align: middle;">
-                            <span class="badge bg-label-danger" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">Rp {{ total_amount_biaya|floatformat:0|default:"0" }}</span>
-                            <br><small class="text-muted">Total Biaya</small>
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

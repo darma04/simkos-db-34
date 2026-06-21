@@ -211,17 +211,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="2" class="text-start ps-4 py-3" style="vertical-align: middle;">
-                            <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ data_properti|length }} Properti</small></div></div>
-                        </td><td class="py-3"></td>
-                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-primary d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_kamar }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Total</small></div></td>
-                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-warning d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_terisi }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Terisi</small></div></td>
-                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_tersedia }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Tersedia</small></div></td>
-                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-info d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ tingkat_hunian }}%</span></span><small class="text-muted" style="font-size: 0.7rem;">Rata-rata</small></div></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>

@@ -221,12 +221,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.2rem;"></i><strong>RINGKASAN</strong><small class="text-muted ms-2">{{ total_trx_masuk }} Transaksi</small></div></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
-                        <td class="text-end py-3"><span class="badge bg-label-success" style="font-size:0.9rem;padding:0.4rem 0.7rem;">Rp {{ total_pemasukan|floatformat:0|intcomma }}</span></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
@@ -256,12 +250,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot class="table-footer-summary">
-                    <tr>
-                        <td colspan="3" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.2rem;"></i><strong>RINGKASAN</strong><small class="text-muted ms-2">{{ total_trx_keluar }} Transaksi</small></div></td>
-                        <td class="text-end py-3"><span class="badge bg-label-danger" style="font-size:0.9rem;padding:0.4rem 0.7rem;">Rp {{ total_pengeluaran|floatformat:0|intcomma }}</span></td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
     </div>
