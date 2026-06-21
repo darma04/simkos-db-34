@@ -132,7 +132,7 @@ $(document).ready(function(){
     dataTable = $('#dataTable').DataTable({
         language:{sSearch:"Cari:",sLengthMenu:"Tampilkan _MENU_ data",sInfo:"Menampilkan _START_ sampai _END_ dari _TOTAL_ data",sInfoEmpty:"Menampilkan 0 sampai 0 dari 0 data",sZeroRecords:"Tidak ditemukan",oPaginate:{sNext:"Selanjutnya",sPrevious:"Sebelumnya"}},
         order:[[0,'desc']],pageLength:25,lengthMenu:[[10,25,50,-1],['10','25','50','Semua']],responsive:false,
-        dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+        dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
     });
     {% endif %}
 });
