@@ -37,12 +37,11 @@
         <div class="col-md-12">
             <div class="card mb-4">
                 <h5 class="card-header">Detail Profil</h5>
-                <!-- Account -->
+                
                 <div class="card-body">
                     <form id="formAccountSettings" method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <!-- Avatar Section -->
                         <div class="d-flex align-items-start align-items-sm-center gap-4 mb-4">
                             <img src="{{ profile.get_avatar_url }}" alt="user-avatar"
                                 class="d-block w-px-100 h-px-100 rounded" id="uploadedAvatar" 
@@ -107,13 +106,12 @@
                         </div>
                     </form>
                 </div>
-                <!-- /Account -->
+                
             </div>
         </div>
     </div>
 </div>
 
-    <!-- Auto-Injected UI Disabler Script -->
     {% if not can_edit.pengaturan.profil %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -147,7 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const removeInput = document.getElementById('removeAvatarInput');
     let originalSrc = avatarPreview.src;
     
-    // Preview avatar on select
     if (avatarInput) {
         avatarInput.addEventListener('change', function(e) {
             if (e.target.files && e.target.files[0]) {
@@ -157,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 reader.readAsDataURL(e.target.files[0]);
                 
-                // Reset remove flag if new file selected
                 if (removeInput) {
                     removeInput.value = '0';
                 }
@@ -165,7 +161,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Reset avatar
     if (resetBtn) {
         resetBtn.addEventListener('click', function() {
             avatarPreview.src = '/static/img/avatars/1.png';

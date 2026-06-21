@@ -8,6 +8,53 @@ TemplateCetak     â†’ Konfigurasi cetak dokumen
 ManajemenData     â†’ Statistik DB, backup, restore, reset
 ==========================================================================
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
 import os
 import json
 import shutil
@@ -388,8 +435,6 @@ def restore_data(request):
     is_zip = backup_file.name.endswith('.zip')
 
     try:
-        import logging
-        logger = logging.getLogger(__name__)
         from django.db import connection
         from io import StringIO
 
@@ -494,8 +539,8 @@ def restore_data(request):
             from apps.hr.models import Karyawan, Departemen
             Karyawan.objects.all().delete()
             Departemen.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         UserActivity.objects.all().delete()
         LogNotifikasi.objects.all().delete()
@@ -627,21 +672,21 @@ def restore_data(request):
                 current_user.is_superuser = True
                 current_user.is_staff = True
                 current_user.save(update_fields=['is_superuser', 'is_staff'])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         try:
             from django.contrib.auth import login
             login(request, current_user)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mencatat activity log: %s", e)
 
         # === LANGKAH 5: VACUUM DATABASE ===
         try:
             with connection.cursor() as cursor:
                 cursor.execute("VACUUM")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         if load_success:
             media_info = f", {media_restored} file media" if media_restored > 0 else ""
@@ -651,37 +696,35 @@ def restore_data(request):
                     status='sukses',
                     catatan=f"Restore dari {backup_file.name} ({file_size / 1024:.1f} KB) - {len(filtered_data)} objek{media_info}. {load_error_msg}",
                     dibuat_oleh=current_user)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Error tidak terduga: %s", e)
             messages.success(request, f'Data berhasil di-restore dari "{backup_file.name}"! ({len(filtered_data)} objek dimuat{media_info}) {load_error_msg}')
         else:
             raise Exception(f"Semua metode restore gagal: {load_error_msg}")
 
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error("[RESTORE] Error: %s", e, exc_info=True)
         try:
             BackupHistory.objects.create(
                 nama_file=backup_file.name, ukuran_file=0, jenis='restore',
                 status='gagal', catatan=f"Error: {str(e)}", dibuat_oleh=request.user)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         messages.error(request, f'Restore gagal: {str(e)}')
     finally:
         try:
             from django.db import connection as conn
             with conn.cursor() as cursor:
                 cursor.execute("PRAGMA foreign_keys = ON")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         # Selalu reconnect signal create_profile (safety net)
         try:
             from django.db.models.signals import post_save as _ps
             from auth.models import Profile as _P
             _ps.connect(_P.create_profile, sender=User)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal mengirim email: %s", e)
         if tmp_path and os.path.exists(tmp_path):
             try:
                 os.unlink(tmp_path)
@@ -744,8 +787,8 @@ def reset_data(request):
             from apps.hr.models import Karyawan, Departemen
             counts['Karyawan'] = Karyawan.objects.count()
             counts['Departemen'] = Departemen.objects.count()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         # Log & Riwayat
         counts['Activity Log'] = UserActivity.objects.count()
@@ -781,8 +824,8 @@ def reset_data(request):
             from apps.hr.models import Karyawan, Departemen
             Karyawan.objects.all().delete()
             Departemen.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
         # 5. Hapus log & notifikasi
         UserActivity.objects.all().delete()
@@ -792,8 +835,8 @@ def reset_data(request):
         # 6. Hapus pengaturan
         try:
             TemplateCetak.objects.all().delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Gagal render template: %s", e)
         RolePermission.objects.all().delete()
 
         # 7. Hapus user lain & profile (PROTEKSI superuser)
@@ -837,16 +880,16 @@ def reset_data(request):
         try:
             with connection.cursor() as cursor:
                 cursor.execute('VACUUM')
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
     except Exception as e:
         try:
             BackupHistory.objects.create(
                 nama_file='reset_semua_data', ukuran_file=0, jenis='reset', status='gagal',
                 catatan=f"Error: {str(e)}", dibuat_oleh=request.user)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         messages.error(request, f'Reset gagal: {str(e)}')
     return redirect('pengaturan:manajemen_data')
 
@@ -880,8 +923,8 @@ def bersihkan_log_aktivitas(request):
         from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute('VACUUM')
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
     return redirect('pengaturan:manajemen_data')
 
 
@@ -902,8 +945,8 @@ def bersihkan_log_notifikasi(request):
         from django.db import connection
         with connection.cursor() as cursor:
             cursor.execute('VACUUM')
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
     return redirect('pengaturan:manajemen_data')
 
 
@@ -961,8 +1004,8 @@ def db_stats_api(request):
         data['stats'] = stats
         data['total_master'] = sum(stats.get(k, 0) for k in ['properti', 'tipe_kamar', 'kamar', 'penyewa'])
         data['total_transaksi'] = sum(stats.get(k, 0) for k in ['kontrak_sewa', 'tagihan_sewa', 'pembayaran_sewa', 'biaya'])
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
 
     return JsonResponse(data)
 

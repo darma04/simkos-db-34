@@ -29,6 +29,11 @@
 """
 from django.db import models
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 class PengaturanPerusahaan(models.Model):
     """Model untuk pengaturan perusahaan (singleton)"""
@@ -395,6 +400,6 @@ class MetodePembayaran(models.Model):
                 metode_pembayaran=self.kode,
                 status='dibayar'
             ).count()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         return pembayaran_count + biaya_count + gaji_count

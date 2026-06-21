@@ -27,7 +27,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -44,7 +44,6 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -77,7 +76,7 @@
                     </select>
                 </div>
             </div>
-            <!-- Baris kedua: Pilih Kolom dan Tombol Filter -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -148,7 +147,6 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Karyawan</h5>
@@ -267,7 +265,7 @@
                                     <small class="text-muted" style="font-size: 0.75rem;">{{ total_karyawan }} Karyawan Terdaftar</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
@@ -285,7 +283,6 @@
         </div>
     </div>
 
-    <!-- Delete Modal -->
     <div class="modal fade" id="deleteKaryawanModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -320,7 +317,7 @@
 
 {% block page_js %}
 <style>
-    /* DataTables Custom Styling - Consistent with produk_list */
+    
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -385,7 +382,6 @@
         letter-spacing: 0;
     }
 
-    /* Mobile Responsiveness */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -393,11 +389,11 @@
             max-width: 100%;
         }
 
-        .datatables-karyawan {
+        {% if departemen_struktur %}.datatables-karyawan {
             min-width: 900px !important;
             width: 900px !important;
             table-layout: auto !important;
-        }
+        }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -405,7 +401,6 @@
         }
     }
 
-    /* Avatar fix */
     .avatar-initial {
         display: flex !important;
         align-items: center !important;
@@ -420,8 +415,9 @@
     let dataTable;
 
     $(document).ready(function () {
-        // Initialize DataTable
-        dataTable = $('#karyawanTable').DataTable({
+        
+        dataTable = {% if departemen_struktur %}
+$('#karyawanTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",
@@ -451,6 +447,7 @@
             }
         });
     });
+{% endif %}
 
     function applyFilter() {
         if (!dataTable) return;
@@ -474,13 +471,10 @@
         }
     }
 
-    // Toggle column visibility via SimkosExport (konsisten dengan halaman lain)
     function toggleColumns() { SimkosExport.toggleColumns('#karyawanTable'); }
     function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=true; }); toggleColumns(); }
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=false; }); toggleColumns(); }
 
-    // ── KONFIGURASI EXPORT KARYAWAN ──
-    // Kolom tabel: 0=NIK, 1=Nama, 2=Jabatan, 3=Departemen, 4=Telepon, 5=Status, 6=Aksi(skip)
     var EXCEL_INFO_KAR = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -495,15 +489,13 @@
         email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
     };
-    // FOOTER_DATA={} karena tidak ada kolom nominal. FOOTER_LABEL hanya ringkasan jumlah.
+    
     var FOOTER_DATA_KAR  = {};
     var FOOTER_LABEL_KAR = 'RINGKASAN ({{ total_karyawan }} Karyawan | Aktif: {{ karyawan_aktif }})';
 
-    // Export via SimkosExport (menghormati filter kolom & semua halaman DT)
     function exportToExcel() { SimkosExport.buildExcel('#karyawanTable', EXCEL_INFO_KAR, FOOTER_DATA_KAR, FOOTER_LABEL_KAR, 'DAFTAR KARYAWAN', 'Daftar_Karyawan'); }
     function exportToPDF()   { SimkosExport.buildPDF('#karyawanTable',   PDF_INFO_KAR,   FOOTER_DATA_KAR, FOOTER_LABEL_KAR, 'DAFTAR KARYAWAN', 'Daftar_Karyawan'); }
 
-    // Delete Handler
     let deleteKaryawanId = null;
 
     function confirmDelete(id, name) {

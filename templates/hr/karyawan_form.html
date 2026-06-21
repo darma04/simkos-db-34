@@ -24,10 +24,10 @@
 
     <div class="card">
         <div class="card-body">
+            
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
-    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.hr.karyawan %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -48,7 +48,6 @@
     </script>
     {% endif %}
 
-                
                 <div class="row mb-4">
                     <div class="col-12">
                         <h6 class="text-primary"><i class="ri-user-line me-1"></i>Informasi Dasar</h6>

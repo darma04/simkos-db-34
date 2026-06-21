@@ -12,8 +12,54 @@
  Kirim ringkasan ke AI → AI merapikan teks → Return ke user
 ==========================================================================
 """
-import json
+
 import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
+import json
 import ssl
 import urllib.request
 import urllib.error
@@ -32,7 +78,6 @@ from .models import AIAssistantConfig, ChatHistory, ChatFeedback
 from .intents import detect_intent, gather_data
 from web_project import TemplateLayout
 
-logger = logging.getLogger(__name__)
 
 
 def _get_ssl_context():
@@ -42,16 +87,16 @@ def _get_ssl_context():
         return ctx
     except Exception:
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
 
 # ═══════════════════════════════════════════════════════════════
 # SYSTEM PROMPT — Konteks SIMKOS (Sistem Manajemen Kost)
 # ═══════════════════════════════════════════════════════════════
-SYSTEM_PROMPT = """Kamu adalah AI Business Intelligence Assistant profesional untuk sistem SIMKOS (Sistem Manajemen Kost).
+SYSTEM_PROMPT = """
+Kamu adalah AI Business Intelligence Assistant profesional untuk sistem SIMKOS (Sistem Manajemen Kost).
 Tugasmu: menganalisa data bisnis kost/kontrakan, membuat laporan, memberikan insight strategis, dan rekomendasi aksi.
+Kamu JUGA berfungsi sebagai PANDUAN PENGGUNAAN sistem — membantu user awam yang tidak paham atau bingung cara menggunakan fitur.
 
 ATURAN UTAMA:
 1. Gunakan Bahasa Indonesia profesional dan mudah dipahami
@@ -72,6 +117,8 @@ ATURAN UTAMA:
 13. Untuk analisa risiko: gunakan level 🔴Tinggi/🟡Sedang/🟢Rendah
 14. Untuk rencana aksi: buat tabel dengan kolom Aksi, Prioritas, Target, Deadline
 15. Ikuti INSTRUKSI khusus yang diberikan bersama data
+16. Jika user bertanya cara menggunakan fitur, jelaskan LANGKAH DEMI LANGKAH dengan jelas
+17. Jika user bertanya tentang relasi data, jelaskan bagaimana modul saling terhubung
 
 QUICK ACTIONS — LINK NAVIGASI:
 Sertakan link ke halaman SIMKOS yang relevan di akhir respons menggunakan format markdown.
@@ -114,6 +161,34 @@ KAPABILITAS:
 - Analisa penyewa: penyewa aktif, penyewa blacklist, tren hunian
 - Analisa tagihan: menunggak, lunas, terlambat bayar
 - Analisa biaya operasional: listrik, air, kebersihan, maintenance
+- Panduan penggunaan semua modul (langkah demi langkah)
+- Penjelasan relasi data antar modul
+
+ALUR OPERASIONAL SIMKOS:
+1. Setup Properti: Input data properti (kost/kontrakan/apartemen) → tentukan tipe kamar → input kamar
+2. Penyewa Baru: Input data penyewa → buat kontrak sewa (pilih kamar, durasi, harga) → tagihan otomatis dibuat
+3. Pembayaran: Penyewa bayar → catat pembayaran → tagihan lunas → pendapatan bertambah
+4. Perpanjangan: Kontrak hampir habis → perpanjang kontrak → buat tagihan baru
+5. Keluar: Penyewa keluar → kontrak selesai → kamar tersedia kembali
+6. Biaya: Catat pengeluaran operasional (listrik, air, kebersihan, maintenance) → kas berkurang
+
+RELASI DATA SIMKOS:
+- Properti → Tipe Kamar → Kamar (unit individual)
+- Penyewa ↔ Kontrak Sewa ↔ Kamar
+- Kontrak Sewa → Tagihan Sewa → Pembayaran Sewa
+- Pembayaran Sewa → Pendapatan (kas bertambah)
+- Transaksi Biaya → Pengeluaran (kas berkurang)
+- Laba = Total Pembayaran - Total Biaya Operasional
+
+PANDUAN INPUT MODUL:
+- Properti: Input nama, alamat, tipe (kost/kontrakan/apartemen), jumlah lantai
+- Tipe Kamar: Input nama tipe, harga per bulan, fasilitas (AC, kamar mandi, dll)
+- Kamar: Pilih properti → pilih tipe → input nomor kamar → status (tersedia/terisi/maintenance)
+- Penyewa: Input nama, jenis kelamin, pekerjaan, kontak, foto KTP
+- Kontrak Sewa: Pilih penyewa → pilih kamar → tanggal mulai → durasi → harga → deposit
+- Tagihan: Pilih kontrak → periode tagihan → jumlah → jatuh tempo
+- Pembayaran: Pilih tagihan → tanggal bayar → jumlah → metode bayar
+- Biaya: Pilih kategori → input jumlah → pilih kas/bank → tanggal
 
 KONTEKS SIMKOS:
 - Modul: Properti, Kamar, Penyewa, Kontrak Sewa, Tagihan, Pembayaran, Biaya, Laporan, HR
@@ -181,7 +256,7 @@ def _call_gemini_urllib(api_key, model, prompt, system_prompt, config):
     """Fallback: Panggil Gemini via urllib (tanpa SDK)."""
     import time
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     payload = {
         "contents": [
@@ -202,6 +277,7 @@ def _call_gemini_urllib(api_key, model, prompt, system_prompt, config):
     for attempt in range(max_retries):
         req = urllib.request.Request(url, data=data, headers={
             'Content-Type': 'application/json',
+            'x-goog-api-key': api_key,
         })
 
         try:

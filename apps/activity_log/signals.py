@@ -51,6 +51,11 @@ from django.core.serializers.json import DjangoJSONEncoder
 import datetime
 from decimal import Decimal
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @receiver(user_logged_in)
 def log_user_login(sender, request, user, **kwargs):
     """Mencatat aktivitas login user ke database log"""
@@ -249,7 +254,7 @@ def log_model_delete(sender, instance, **kwargs):
             user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
         )
     except Exception as e:
-        pass
+        logger.warning("Error tidak terduga: %s", e)
 
 
 def capture_old_state(sender, instance, **kwargs):

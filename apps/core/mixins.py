@@ -40,7 +40,7 @@
 from django.shortcuts import redirect                   # Fungsi redirect
 from django.contrib import messages                      # Framework pesan flash
 from django.core.exceptions import PermissionDenied      # Exception 403 Forbidden
-from apps.core.permissions import has_permission         # Fungsi cek permission
+from apps.core.permissions import has_permission, get_user_role         # Fungsi cek permission & user role
 
 
 class SubModulePermissionMixin:
@@ -323,24 +323,31 @@ class CreatePermissionMixin:
 class UpdatePermissionMixin:
     """
     Mixin untuk cek permission EDIT (can_edit) dengan support sub-modul.
-    Raise PermissionDenied (403) jika user tidak punya akses edit.
+    Dukung read-only mode: GET dengan 'read' permission akan render form readonly.
     """
     permission_module = None
     permission_sub_module = None
 
     def dispatch(self, request, *args, **kwargs):
-        """Dipanggil sebelum view dijalankan — cek permission."""
-        if request.user.is_superuser:
+        SUPERUSER_ROLE_CODES = {'SUPERUSER', 'PEMILIK'}
+        if request.user.is_superuser or get_user_role(request.user) in SUPERUSER_ROLE_CODES:
             return super().dispatch(request, *args, **kwargs)
 
         if not self.permission_module:
             raise ValueError(f"{self.__class__.__name__} must define 'permission_module'")
 
-        # Cek permission EDIT (action='write' = alias untuk 'update')
-        if not has_permission(request.user, 'write', self.permission_module, self.permission_sub_module):
-            module_name = self.permission_sub_module or self.permission_module
-            raise PermissionDenied(f'Anda tidak memiliki akses untuk mengubah data di {module_name.title()}')
-
+        has_write = has_permission(request.user, 'write', self.permission_module, self.permission_sub_module)
+        
+        if request.method == 'GET':
+            if not has_permission(request.user, 'read', self.permission_module, self.permission_sub_module):
+                module_name = self.permission_sub_module or self.permission_module
+                raise PermissionDenied(f'Anda tidak memiliki akses untuk melihat data di {module_name.title()}')
+        else:
+            if not has_write:
+                module_name = self.permission_sub_module or self.permission_module
+                messages.error(request, f'Anda tidak memiliki izin untuk mengubah data di {module_name.title()}.')
+                return redirect(self.request.path)
+        
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -366,10 +373,12 @@ class UpdatePermissionMixin:
         return context
 
     def post(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
+        SUPERUSER_ROLE_CODES = {'SUPERUSER', 'PEMILIK'}
+        if not (request.user.is_superuser or get_user_role(request.user) in SUPERUSER_ROLE_CODES):
             if not has_permission(request.user, 'write', self.permission_module, self.permission_sub_module):
                 module_name = self.permission_sub_module or self.permission_module
-                raise PermissionDenied(f'Anda tidak memiliki akses untuk mengubah data di {module_name.title()}')
+                messages.error(request, f'Anda tidak memiliki izin untuk mengubah data di {module_name.title()}.')
+                return redirect(self.request.path)
         if hasattr(super(), 'post'):
             return super().post(request, *args, **kwargs)
         from django.http import HttpResponseNotAllowed

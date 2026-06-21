@@ -10,6 +10,11 @@
 from django.shortcuts import redirect
 from django.urls import reverse
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class MaintenanceMiddleware:
     """
     Mengecek status maintenance_mode di database.
@@ -49,7 +54,7 @@ class MaintenanceMiddleware:
                 
                 # Lempar semua akses lain ke halaman maintenance
                 return redirect(reverse('pages-misc-under-maintenance'))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
             
         return self.get_response(request)

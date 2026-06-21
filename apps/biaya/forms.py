@@ -5,6 +5,11 @@ from django import forms
 from apps.biaya.models import KategoriBiaya, TransaksiBiaya
 from datetime import date
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 class KategoriBiayaForm(forms.ModelForm):
     """Form CRUD Kategori Biaya."""
@@ -68,6 +73,6 @@ class TransaksiBiayaForm(forms.ModelForm):
             choices = [('', 'Pilih Metode Pembayaran')]
             choices += [(m.kode, m.nama) for m in metode_qs]
             self.fields['metode_pembayaran'].choices = choices
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 

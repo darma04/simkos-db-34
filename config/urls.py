@@ -20,11 +20,19 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.views.generic.base import RedirectView
 from web_project.views import custom_error_404, custom_error_403, custom_error_400, custom_error_500
 
+import logging
 
+logger = logging.getLogger(__name__)
+
+
+
+@never_cache
 @login_required
 def global_search_api(request):
     """API pencarian global — mencari di semua model utama SIMKOS."""
@@ -43,7 +51,7 @@ def global_search_api(request):
                 'subtitle': f'{p.get_tipe_display()} - {p.kota or ""}',
                 'icon': 'ri-building-2-line',
                 'category': 'Properti',
-                'url': '/properti/',
+                'url': f'/properti/{p.pk}/',
             })
 
         # 2. Kamar
@@ -76,7 +84,7 @@ def global_search_api(request):
                 'subtitle': k.penyewa.nama,
                 'icon': 'ri-file-list-3-line',
                 'category': 'Kontrak',
-                'url': '/sewa/kontrak/',
+                'url': f'/sewa/kontrak/{k.pk}/',
             })
 
         # 5. Tagihan
@@ -98,21 +106,18 @@ def global_search_api(request):
                 'subtitle': f'@{u.username}',
                 'icon': 'ri-user-line',
                 'category': 'User',
-                'url': '/users/',
+                'url': f'/users/detail/{u.pk}/',
             })
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)
 
     return JsonResponse({'results': results[:20]})
 
 
 urlpatterns = [
-    # Test Error Routes
-    path("test-error/404/", lambda request: custom_error_404(request, Exception("Test 404"))),
-    path("test-error/403/", lambda request: custom_error_403(request, Exception("Test 403"))),
-    path("test-error/400/", lambda request: custom_error_400(request, Exception("Test 400"))),
-    path("test-error/500/", lambda request: custom_error_500(request)),
+    # Django Admin
+    path("admin/", admin.site.urls),
 
     # Global Search API
     path("api/search/", global_search_api, name='global_search'),
@@ -140,12 +145,22 @@ urlpatterns = [
 
     # Original URLs
     path("", include("apps.pages.urls")),
+    path("", RedirectView.as_view(url='/', permanent=True), name='landing-page'),
 ]
 
 # Media files — dilayani di semua environment (development & production)
 # WhiteNoise hanya menangani static files, bukan media files.
 # Agar foto/upload berfungsi di production, Django harus tetap melayani media.
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Test Error Routes — only available in DEBUG mode
+if settings.DEBUG:
+    urlpatterns += [
+        path("test-error/404/", lambda request: custom_error_404(request, Exception("Test 404"))),
+        path("test-error/403/", lambda request: custom_error_403(request, Exception("Test 403"))),
+        path("test-error/400/", lambda request: custom_error_400(request, Exception("Test 400"))),
+        path("test-error/500/", lambda request: custom_error_500(request)),
+    ]
 
 # Error Handlers
 handler404 = custom_error_404

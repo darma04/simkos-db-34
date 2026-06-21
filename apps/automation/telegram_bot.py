@@ -196,8 +196,7 @@ def _polling_loop():
 
         # SSL context
         ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
+        # SSL context dengan verifikasi sertifikat aktif (default aman)
 
         # Hapus webhook agar getUpdates berfungsi
         _delete_webhook(bot_token, ssl_ctx)
@@ -244,8 +243,8 @@ def _polling_loop():
                 error_body = ''
                 try:
                     error_body = e.read().decode('utf-8', errors='replace')
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Error tidak terduga: %s", e)
 
                 if e.code == 409 or 'conflict' in error_body.lower():
                     conflict_count += 1

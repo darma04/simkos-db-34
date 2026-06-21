@@ -5,8 +5,8 @@
 
 # Ignoring static/assets folders
 ./assets/
-static/
-staticfiles/
+# static/  <-- JANGAN ignore! Folder ini berisi file JS/CSS custom sumber asli.
+staticfiles/  # Folder ini auto-generated oleh collectstatic, aman di-ignore.
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -142,6 +142,7 @@ celerybeat.pid
 .env
 .env.local
 .env.production
+.env.prod
 
 # Virtual environments
 .venv

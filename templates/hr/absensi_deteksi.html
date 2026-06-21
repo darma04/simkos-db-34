@@ -28,7 +28,7 @@
     </div>
 
     <div class="row">
-        <!-- Preview Kamera -->
+        
         <div class="col-md-7 mb-4">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -59,7 +59,6 @@
             </div>
         </div>
 
-        <!-- Info Absensi -->
         <div class="col-md-5 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -76,7 +75,6 @@
                         Waktu: <strong id="currentTime">{{ now|time:"H:i:s" }}</strong>
                     </div>
                     
-                    <!-- Hasil Deteksi -->
                     <div id="detectionResult" style="display: none;">
                         <div class="card bg-label-success mb-3">
                             <div class="card-body">
@@ -106,7 +104,6 @@
                         </div>
                     </div>
                     
-                    <!-- Info Default -->
                     <div id="defaultInfo">
                         <div class="text-center py-4">
                             <i class="ri-user-face-line ri-4x text-muted mb-3"></i>
@@ -119,7 +116,6 @@
         </div>
     </div>
 
-    <!-- Result Alert -->
     <div id="resultAlert" class="alert" style="display: none;"></div>
     {% csrf_token %}
 </div>
@@ -133,7 +129,6 @@ let stream = null;
 let detectedKaryawanId = null;
 let capturedBase64 = null;
 
-// Update time
 setInterval(function() {
     const now = new Date();
     document.getElementById('currentTime').textContent = 
@@ -141,7 +136,7 @@ setInterval(function() {
 }, 1000);
 
 function startCamera() {
-    // Tampilkan loading saat memulai kamera
+    
     document.getElementById('faceStatus').innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Memulai Kamera...';
     document.getElementById('faceStatus').className = 'badge bg-label-warning';
 
@@ -152,7 +147,6 @@ function startCamera() {
         return;
     }
 
-    // Hentikan stream lama jika ada
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
@@ -174,7 +168,6 @@ function startCamera() {
         document.getElementById('faceStatus').innerHTML = '<i class="ri-focus-2-line me-1"></i>Kamera Aktif';
         document.getElementById('faceStatus').className = 'badge bg-label-success';
         
-        // Reset detection
         resetDetection();
     })
     .catch(function(error) {
@@ -188,7 +181,7 @@ function startCamera() {
             errorMsg += 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain yang menggunakan kamera.';
         } else if (error.name === 'OverconstrainedError') {
             errorMsg += 'Konfigurasi kamera tidak didukung. Mencoba pengaturan alternatif...';
-             // Retry with simpler constraints
+             
             navigator.mediaDevices.getUserMedia({ video: true })
             .then(function(s) {
                 stream = s;
@@ -229,7 +222,6 @@ function detectAndAbsen() {
     document.getElementById('faceStatus').innerHTML = '<i class="ri-loader-4-line ri-spin me-1"></i>Mendeteksi Wajah...';
     document.getElementById('faceStatus').className = 'badge bg-label-warning';
     
-    // Capture current frame
     const fotoBase64 = captureFrame();
     
     const formData = new FormData();
@@ -248,19 +240,19 @@ function detectAndAbsen() {
         document.getElementById('detectBtn').innerHTML = '<i class="ri-user-search-line me-1"></i>Deteksi & Absen';
         
         if (data.success && data.karyawan_id) {
-            // Wajah dikenali
+            
             detectedKaryawanId = data.karyawan_id;
             showDetectionResult(data);
             document.getElementById('faceStatus').innerHTML = '<i class="ri-checkbox-circle-line me-1"></i>Wajah Dikenali';
             document.getElementById('faceStatus').className = 'badge bg-label-success';
         } else if (data.has_face && !data.karyawan_id) {
-            // Ada wajah tapi tidak dikenali
+            
             showResult(false, data.message + ' <a href="{% url "hr:registrasi-wajah" %}" class="alert-link">Daftarkan wajah</a>');
             document.getElementById('faceStatus').innerHTML = '<i class="ri-user-unfollow-line me-1"></i>Wajah Tidak Dikenali';
             document.getElementById('faceStatus').className = 'badge bg-label-warning';
             resetDetection();
         } else {
-            // Tidak ada wajah
+            
             showResult(false, data.message);
             document.getElementById('faceStatus').innerHTML = '<i class="ri-error-warning-line me-1"></i>Wajah Tidak Terdeteksi';
             document.getElementById('faceStatus').className = 'badge bg-label-danger';
@@ -374,12 +366,10 @@ function showResult(success, message) {
     setTimeout(() => { alert.style.display = 'none'; }, 5000);
 }
 
-// Start camera on page load
 document.addEventListener('DOMContentLoaded', function() {
     startCamera();
 });
 
-// Cleanup saat meninggalkan halaman
 window.addEventListener('beforeunload', function() {
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -389,10 +379,10 @@ window.addEventListener('beforeunload', function() {
 
 <style>
 #video {
-    transform: scaleX(-1); /* Mirror effect */
+    transform: scaleX(-1); 
 }
 #photoPreview {
-    transform: scaleX(-1); /* Mirror effect */
+    transform: scaleX(-1); 
 }
 </style>
 {% endblock page_js %}

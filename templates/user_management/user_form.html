@@ -12,7 +12,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Breadcrumb -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -25,9 +25,6 @@
         </a>
     </div>
 
-    <!-- Main Form Card -->
-    
-    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.user_management %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -52,6 +49,7 @@
         <div class="col-xl-8 col-lg-10 mx-auto">
             <div class="card">
                 <div class="card-body">
+                    
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
                         {% if next_url %}
@@ -77,7 +75,6 @@
                         </div>
                         {% endif %}
 
-                        <!-- Basic Information -->
                         <div class="mb-4">
                             <h5 class="card-title mb-3">
 <i class="ri-user-line me-2"></i>Informasi Dasar
@@ -116,7 +113,6 @@
                             </div>
                         </div>
 
-                        <!-- Password (for new user only) -->
                         {% if not is_edit %}
                         <div class="mb-4">
                             <h5 class="card-title mb-3">
@@ -142,7 +138,6 @@
                         </div>
                         {% endif %}
 
-                        <!-- Role & Permissions -->
                         <div class="mb-4">
                             <h5 class="card-title mb-3">
                                 <i class="ri-shield-user-line me-2"></i>Role & Akses
@@ -190,7 +185,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Actions -->
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ri-save-line me-2"></i>
@@ -210,19 +204,17 @@
 
 {% block page_js %}
 <script>
-// Tambah class Bootstrap ke field form
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Text inputs
+    
     document.querySelectorAll('input[type="text"], input[type="email"]').forEach(el => {
         el.classList.add('form-control');
     });
     
-    // Checkbox-checkbox
     document.querySelectorAll('input[type="checkbox"]').forEach(el => {
         el.classList.add('form-check-input');
     });
     
-    // Password validation
     const passwordForm = document.querySelector('form');
     if (passwordForm) {
         passwordForm.addEventListener('submit', function(e) {

@@ -32,10 +32,9 @@
         <span class="text-muted fw-light">Sistem /</span> Log Aktivitas
     </h4>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            <!-- Baris 1: Filter Inputs -->
+            
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Tanggal Mulai</label>
@@ -65,7 +64,6 @@
                 </div>
             </div>
 
-            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -130,7 +128,6 @@
             </div>
         </div>
     </div>
-
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -210,7 +207,7 @@
                                         Aktivitas</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -304,7 +301,6 @@
         {% endif %}
     });
 
-    // Company Information (from Template Cetak settings)
     const COMPANY_INFO = {
         name: "{{ export_pdf_template.header_nama_perusahaan }}",
         address: "{{ export_pdf_template.header_alamat }}",
@@ -335,10 +331,9 @@
         const table = document.getElementById('logTable');
         if (!table) return;
 
-        // Table headers: 0=Waktu, 1=User, 2=Aksi, 3=Objek, 4=IP, 5=Detail
         const headers = table.querySelectorAll('thead th');
         headers.forEach((th, index) => {
-            if (index === headers.length - 1) return; // Always show Detail
+            if (index === headers.length - 1) return; 
             th.style.display = selectedCols.includes(index.toString()) ? '' : 'none';
         });
 
@@ -346,13 +341,12 @@
         rows.forEach(tr => {
             const cells = tr.querySelectorAll('td');
             cells.forEach((td, index) => {
-                if (index === cells.length - 1) return; // Always show Detail
+                if (index === cells.length - 1) return; 
                 td.style.display = selectedCols.includes(index.toString()) ? '' : 'none';
             });
         });
     }
 
-    // Select all column checkboxes
     function selectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             cb.checked = true;
@@ -360,7 +354,6 @@
         toggleColumns();
     }
 
-    // Deselect all column checkboxes
     function deselectAllColumns() {
         document.querySelectorAll('.column-checkbox').forEach(cb => {
             cb.checked = false;
@@ -370,9 +363,8 @@
 
     function exportToExcel() {
         const table = document.getElementById('logTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
-        // Create HTML table for Excel (.xls format)
         let html = '<table border="1">';
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
 
@@ -419,7 +411,7 @@
     function exportToPDF() {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         const table = document.getElementById('logTable');
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         const headers = [];
         const headerRow = table.querySelector('thead tr');
@@ -496,3 +488,39 @@
     }
 </script>
 {% endblock page_js %}
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>

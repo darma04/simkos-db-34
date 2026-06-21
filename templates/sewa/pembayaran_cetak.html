@@ -18,7 +18,6 @@
         body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.6; color: #333; padding: 20px; }
         .invoice-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd; }
 
-        /* Header */
         .header-table { width: 100%; border-bottom: 3px solid #696cff; padding-bottom: 15px; margin-bottom: 25px; }
         .header-table td { vertical-align: top; }
         .company-logo { height: 26px; width: auto; vertical-align: middle; }
@@ -28,13 +27,11 @@
         .invoice-number { font-size: 14px; color: #666; margin-bottom: 10px; }
         .status-paid { display: inline-block; padding: 6px 20px; -webkit-border-radius: 20px; border-radius: 20px; font-weight: bold; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; background-color: #e7e7ff; color: #696cff; border: 1px solid #c1c2ff; }
 
-        /* Info */
         .info-table { width: 100%; margin-bottom: 25px; }
         .info-section h3 { font-size: 12px; color: #696cff; margin-bottom: 10px; text-transform: uppercase; }
         .info-row { margin-bottom: 5px; }
         .info-label { font-weight: bold; display: inline-block; width: 130px; }
 
-        /* Items */
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .items-table thead { background: #f8f9fa; }
         .items-table th { padding: 12px 8px; text-align: left; font-weight: bold; border-bottom: 2px solid #696cff; font-size: 11px; text-transform: uppercase; }
@@ -42,21 +39,17 @@
         .items-table .text-right { text-align: right; }
         .items-table .text-center { text-align: center; }
 
-        /* Totals */
         .totals-table { width: 300px; margin-left: auto; border-collapse: collapse; }
         .totals-table td { padding: 8px 0; border-bottom: 1px solid #eee; }
         .totals-table .grand-total td { border-top: 2px solid #696cff; border-bottom: 2px solid #696cff; font-size: 16px; font-weight: bold; color: #696cff; padding: 12px 0; }
 
-        /* Signature */
         .signature-table { width: 100%; margin-top: 200px; margin-bottom: 20px; }
         .signature-line { border-top: 1px solid #333; margin-top: 60px; padding-top: 5px; text-align: center; }
 
-        /* Footer */
         .footer-table { width: 100%; border-top: 1px solid #ddd; margin-top: 10px; }
         .footer-table td { padding-top: 25px; text-align: center; font-size: 11px; color: #666; line-height: 1.8; }
         .footer-table p { margin: 0 0 3px 0; }
 
-        /* Mobile Responsive */
         @media screen and (max-width: 768px) {
             body { padding: 10px; }
             .invoice-container { padding: 15px; }
@@ -67,7 +60,6 @@
             .totals-table { width: 100%; }
         }
 
-        /* Print Styles */
         @media print {
             .invoice-status, .order-status, .po-status, .slip-status {
                 -webkit-print-color-adjust: exact !important;
@@ -96,7 +88,7 @@
 
 <body>
     <div class="invoice-container">
-        <!-- Header (TABLE layout) -->
+        
         <table class="header-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top; width: 50%;">
@@ -120,7 +112,6 @@
             </tr>
         </table>
 
-        <!-- Info Penyewa & Pembayaran (TABLE layout) -->
         <table class="info-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="vertical-align: top; width: 50%;" class="info-section">
@@ -140,7 +131,6 @@
             </tr>
         </table>
 
-        <!-- Items Table -->
         <table class="items-table">
             <thead>
                 <tr>
@@ -164,7 +154,6 @@
             </tbody>
         </table>
 
-        <!-- Totals (TABLE layout) -->
         <table class="totals-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td>Total Tagihan:</td>
@@ -187,7 +176,6 @@
         </div>
         {% endif %}
 
-        <!-- Signature (TABLE layout) -->
         <table class="signature-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td style="text-align: center; width: 200px;">
@@ -200,7 +188,6 @@
             </tr>
         </table>
 
-        <!-- Footer (TABLE layout) -->
         <table class="footer-table" cellpadding="0" cellspacing="0">
             <tr>
                 <td>
@@ -213,7 +200,6 @@
         </table>
     </div>
 
-    <!-- Tombol Kembali (fallback untuk Android WebView) -->
     <div id="backBtnWrap" class="no-print" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999;">
         <a id="backBtn" href="javascript:void(0)" style="display:inline-block; padding:12px 32px; background:#696cff; color:#fff; text-decoration:none; border-radius:8px; font-size:14px; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
             ← Kembali
@@ -221,7 +207,7 @@
     </div>
 
     <script>
-        // Smart Print Handler — Universal: Browser + Capacitor Android (SerpApp.triggerPrint)
+        
         (function() {
             var printed = false, afterPrintFired = false;
             function goBack() {

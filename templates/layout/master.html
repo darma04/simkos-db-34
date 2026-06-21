@@ -16,13 +16,13 @@
     <title>{% block title %}{% endblock title %} | {{ system_title|default:"SIMKOS" }}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
-    <!-- Meta Deskripsi SEO (Dinamis dari Pengaturan Meta Sistem) -->
+    
     <meta name="description" content="{% if system_description %}{{ system_description }}{% else %}{% get_theme_variables 'template_description' %}{% endif %}" />
-    <!-- Meta Keywords SEO (Dinamis dari Pengaturan Meta Sistem) -->
+    
     <meta name="keywords" content="{% if system_keywords %}{{ system_keywords }}{% else %}{% get_theme_variables 'template_keyword' %}{% endif %}" />
-    <!-- Canonical SEO -->
+    
     <link rel="canonical" href="{% get_theme_variables 'product_page' %}">
-    <!-- Favicon (dinamis dari Pengaturan Sistem) -->
+    
     {% if system_favicon_url %}
     <link rel="icon" type="image/png" href="{{ system_favicon_url }}" />
     <link rel="shortcut icon" href="{{ system_favicon_url }}" />
@@ -31,16 +31,12 @@
     <link rel="shortcut icon" href="{% static 'img/favicon/logo-default.png' %}" />
     {% endif %}
 
-    <!-- Include the styles partial -->
     {% include is_front|yesno:"./partials/styles_front.html,./partials/styles.html" %}
 
     {% block vendor_css %}{% endblock vendor_css %}
 
-    <!--Page CSS-->
     {% block page_css %}{% endblock page_css %}
-    <!-- ═══════════════════════════════════════════════════════════════════
-         MOBILE NAVBAR FIX — Padding Seimbang untuk Capacitor WebView
-         ═══════════════════════════════════════════════════════════════════ -->
+    
     <style>
       @media (max-width: 1199.98px) {
         .layout-navbar #layout-navbar,
@@ -65,9 +61,6 @@
         }
       }
 
-      /* ═══════════════════════════════════════════════════════════════════
-         GLOBAL FORM SPACING — Konsistensi jarak antar field di semua form
-         ═══════════════════════════════════════════════════════════════════ */
       .card-body form .row {
         row-gap: 0.25rem;
       }
@@ -85,26 +78,20 @@
       }
     </style>
 
-
-    <!-- Include the scripts partial (required ) -->
     {% include is_front|yesno:"./partials/scripts_includes_front.html,./partials/scripts_includes.html" %}
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         RBAC GLOBAL UI GATING: CSS Auto-Hider (Action Masking)
-         Menyembunyikan action button secara mutlak jika tidak ada permission
-         ═══════════════════════════════════════════════════════════════════ -->
     {% if rbac_current_module %}
     <style>
         {% if rbac_can_delete == False %}
-        /* Hiden aksi delete secara global */
+        
         .btn-delete, [data-action="delete"], [data-bs-target*="delete"], [data-bs-target*="Delete"], form[action*="delete"] button[type="submit"], a[href*="delete"], a[href*="hapus"] { display: none !important; }
         {% endif %}
         {% if rbac_can_create == False %}
-        /* Hiden aksi create secara global */
+        
         .btn-create, [data-action="create"], a[href*="tambah"], a[href*="create"] { display: none !important; }
         {% endif %}
         {% if rbac_can_edit == False %}
-        /* Hiden aksi edit di list dan detail secara global */
+        
         .btn-edit, [data-action="edit"], [data-bs-target*="edit"], [data-bs-target*="Edit"], a[href*="edit"], a[href*="ubah"], a[href*="update"], a[href*="perbarui"] { display: none !important; }
         {% endif %}
     </style>
@@ -113,23 +100,15 @@
 
   <body>
 
-    
-    <!-- beautify ignore:end -->
-
     {% block layout %}
     {% endblock layout %}
 
     {% include is_front|yesno:"./partials/scripts_front.html,./partials/scripts.html" %}
 
-    <!--Vendors Javascript-->
     {% block vendor_js %} {% endblock vendor_js %}
 
-    <!--Page Javascript-->
     {% block page_js %} {% endblock page_js %}
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         EXPORT UTILS — INLINE (Tidak bergantung pada file external)
-         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
@@ -151,11 +130,6 @@
         }
       }
 
-      // ═══════════════════════════════════════════════════════════════
-      // METODE DEFINITIF: PROTOTYPE-LEVEL INTERCEPT
-      // ═══════════════════════════════════════════════════════════════
-
-      // ── 1. SIMPAN SALINAN BLOB SAAT createObjectURL DIPANGGIL ──────
       var _blobStore = {};
       var _origCreateObjectURL = URL.createObjectURL.bind(URL);
       URL.createObjectURL = function(blob) {
@@ -167,7 +141,6 @@
           return url;
       };
 
-      // ── 2. TUNDA revokeObjectURL SAMPAI PROSES SELESAI ─────────────
       var _origRevokeObjectURL = URL.revokeObjectURL.bind(URL);
       URL.revokeObjectURL = function(url) {
           if (_blobStore[url]) {
@@ -180,7 +153,6 @@
           try { _origRevokeObjectURL(url); } catch(e){}
       };
 
-      // ── 3. KIRIM KE ANDROID VIA NATIVE BRIDGE (CHUNKING) ──────────
       function _sendToSerpApp(pureBase64, fname, mimeType) {
          if (!window.SerpApp) return false;
          if (window.SerpApp.saveBase64Chunk) {
@@ -203,7 +175,6 @@
          return true;
       }
 
-      // ── 4. KONVERSI BLOB KE BASE64 DAN KIRIM ──────────────────────
       function _downloadBlobWebView(blob, filename) {
           var reader = new FileReader();
           reader.onloadend = function() {
@@ -226,7 +197,6 @@
           reader.readAsDataURL(blob);
       }
 
-      // ── 5. PROTOTYPE-LEVEL INTERCEPT (ANTI-BYPASS MUTLAK) ─────────
       var _origAnchorClick = HTMLAnchorElement.prototype.click;
       HTMLAnchorElement.prototype.click = function() {
           if (_isWebView() && this.href) {
@@ -259,7 +229,6 @@
           return _origAnchorClick.apply(this, arguments);
       };
 
-      // ── 5.5 EVETARGET PROTOTYPE INTERCEPT (MENGATASI FileSaver.js) ─
       var _origDispatchEvent = EventTarget.prototype.dispatchEvent;
       EventTarget.prototype.dispatchEvent = function(event) {
           if (event && event.type === 'click' && _isWebView() && this instanceof HTMLAnchorElement && this.href) {
@@ -272,7 +241,6 @@
           return _origDispatchEvent.apply(this, arguments);
       };
 
-      // ── 6. BROWSER DOWNLOAD (Jalur non-WebView) ───────────────────
       function _downloadBlobBrowser(blob, filename) {
         try {
           var url = URL.createObjectURL(blob);
@@ -295,7 +263,7 @@
       function exportTableToExcel(tableId, filename) {
         try {
           var table = document.getElementById(tableId);
-          if (!table) { alert('Tabel tidak ditemukan!'); return; }
+          if (!table) { showExportError(); return; }
           var csv = [];
           var headerRow = table.querySelector('thead tr');
           if (headerRow) {
@@ -332,7 +300,7 @@
         try {
           if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia.'); return; }
           var table = document.getElementById(tableId);
-          if (!table) { alert('Tabel tidak ditemukan!'); return; }
+          if (!table) { showExportError(); return; }
           var headers = [];
           var headerRow = table.querySelector('thead tr');
           if (headerRow) {
@@ -378,7 +346,6 @@
         } catch (error) { alert('Terjadi kesalahan saat export PDF: ' + error.message); }
       }
 
-      // Global Download Interceptor
       if (_isWebView()) {
         document.addEventListener('click', function(e) {
           var target = e.target.closest('a');
@@ -455,11 +422,6 @@
     })();
     </script>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         SIMKOS EXPORT MODULE — INLINE (Tidak bergantung pada simkos_export.js)
-         Modul SimkosExport digunakan oleh SEMUA halaman list (laporan, sewa, dll.)
-         Di-embed langsung agar PASTI berfungsi di Capacitor WebView.
-         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
@@ -500,7 +462,7 @@
       }
       function buildExcel(tid,info,fd,fl,title,fn,mc) {
         try{
-          if(!document.querySelector(tid)){alert('Tabel tidak ditemukan!');return;}
+          if(!document.querySelector(tid)){showExportError();return;}
           if(typeof $==='undefined'||typeof $.fn.dataTable==='undefined'){alert('DataTables belum dimuat!');return;}
           var vc=_getVC(tid),ta=new $.fn.dataTable.Api(tid),cc=vc.length;
           if(cc===0){alert('Tidak ada kolom untuk di-export!');return;}
@@ -528,7 +490,7 @@
       function buildPDF(tid,info,fd,fl,title,fn,mc) {
         try{
           if(typeof pdfMake==='undefined'){alert('pdfMake tidak tersedia!');return;}
-          if(!document.querySelector(tid)){alert('Tabel tidak ditemukan!');return;}
+          if(!document.querySelector(tid)){showExportError();return;}
           var vc=_getVC(tid),ta=new $.fn.dataTable.Api(tid),cc=vc.length;
           if(cc===0){alert('Tidak ada kolom untuk di-export!');return;}
           var hdrs=vc.map(function(c){return{text:c.text,style:'tableHeader',fillColor:'#696CFF',color:'#FFFFFF',bold:true,alignment:'center'};});
@@ -553,16 +515,10 @@
     })();
     </script>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         GLOBAL AJAX ERROR HANDLER — Menangkap SEMUA error AJAX (jQuery)
-         Mencegah error default Android/browser muncul saat koneksi terputus,
-         timeout, atau server error (500, 502, 503, 504).
-         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function(){
       'use strict';
 
-      // ── Toast Notification System ──────────────────────────────────────
       var toastContainer = null;
       function ensureToastContainer() {
         if (!toastContainer) {
@@ -595,7 +551,6 @@
 
         container.appendChild(toast);
 
-        // Auto-remove setelah 8 detik
         setTimeout(function() {
           if (toast.parentElement) {
             toast.style.animation = 'fadeOut 0.3s ease-out forwards';
@@ -604,7 +559,6 @@
         }, 8000);
       }
 
-      // Tambahkan CSS animasi jika belum ada
       if (!document.getElementById('simkos-toast-css')) {
         var style = document.createElement('style');
         style.id = 'simkos-toast-css';
@@ -612,23 +566,19 @@
         document.head.appendChild(style);
       }
 
-      // ── Global jQuery AJAX Error Handler ───────────────────────────────
       if (typeof jQuery !== 'undefined' || typeof $ !== 'undefined') {
         var jq = typeof jQuery !== 'undefined' ? jQuery : $;
         
-        // Tambahkan default timeout untuk semua AJAX request
         jq.ajaxSetup({
-          timeout: 30000 // 30 detik timeout default
+          timeout: 30000 
         });
 
-        // Global AJAX error handler
         jq(document).ajaxError(function(event, xhr, settings, thrownError) {
-          // Skip jika error sudah dihandle
+          
           if (settings._serpErrorHandled) return;
 
           var title, message, type;
 
-          // Status 0 = Network Error / Connection Refused / CORS / Aborted
           if (xhr.status === 0) {
             if (xhr.statusText === 'abort') {
               return;
@@ -693,7 +643,6 @@
         console.log('[SIMKOS] Global AJAX Error Handler AKTIF');
       }
 
-      // ── Global Fetch Error Handler (untuk non-jQuery requests) ─────────
       var _origFetch = window.fetch;
       window.fetch = function(url, options) {
         return _origFetch.apply(this, arguments).catch(function(error) {
@@ -709,7 +658,6 @@
         });
       };
 
-      // ── Offline/Online Event Listeners ─────────────────────────────────
       window.addEventListener('offline', function() {
         showToast('Koneksi Terputus', 'Perangkat Anda kehilangan koneksi internet. Beberapa fitur mungkin tidak berfungsi.', 'error');
       });
@@ -718,27 +666,23 @@
         showToast('Koneksi Terhubung', 'Koneksi internet telah pulih kembali.', 'success');
       });
 
-      // Expose untuk penggunaan manual
       window._showSerpToast = showToast;
 
       console.log('[SIMKOS] Global Error Handler System AKTIF');
     })();
     </script>
 
+    {% if user.is_authenticated %}
     {% load ai_tags %}
     {% get_ai_name as ai_display_name %}
     {% include "partials/ai_chat_widget.html" with ai_name=ai_display_name %}
+    {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════════════════════
-         RBAC GLOBAL UI GATING: JS Auto-Disabler (Form Locking)
-         Mengubah seluruh input di form menjadi readonly jika tidak ada akses
-         ═══════════════════════════════════════════════════════════════════ -->
     {% if is_readonly_mode %}
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         console.warn('🔒 [RBAC] Read-Only Mode Activated: Form Dinonaktifkan!');
         
-        // 1. Matikan semua input standar (kecuali pencarian dataTables/pencarian dropdown)
         const inputs = document.querySelectorAll('.card-body form input:not([type="hidden"]), .card-body form select, .card-body form textarea');
         inputs.forEach(input => {
             if(!input.closest('.dataTables_filter')) {
@@ -748,16 +692,14 @@
             }
         });
 
-        // 2. Sembunyikan semua tombol Submit di dalam card form
         const submitBtns = document.querySelectorAll('.card-body form button[type="submit"], .card-body form input[type="submit"], .card-body form button:not(.btn-close), .card-body button[type="submit"]');
         submitBtns.forEach(btn => {
-            // pengecualian khusus tombol yang memang perlu di detail page seperti kembali
+            
             if(btn.id !== 'testBtn' && btn.innerText.toLowerCase().indexOf('kembali') === -1) {
                 btn.style.display = 'none';
             }
         });
 
-        // 3. Tambahkan Alert Peringatan di atas Form (dalam card pertama)
         const cardBody = document.querySelector('.card-body');
         if(cardBody) {
             const form = cardBody.querySelector('form');
@@ -777,16 +719,10 @@
     </script>
     {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         REALTIME MAINTENANCE STATUS CHECKER (JS POLLING)
-         Mengecek status perbaikan dari back-end terus menerus di background.
-         Ini diperlukan agar aplikasi ter-redirect otomatis ketika
-         Admin mengaktifkan Maintenance Mode tanpa user harus me-reload webview.
-         ═══════════════════════════════════════════════════════════════════════ -->
     <script>
     (function() {
         var isKicking = false;
-        // Jangan polling di halaman maintenance/login/license (mereka punya polling sendiri)
+        
         var skipPaths = ['/pages/misc/under_maintenance/', '/login/', '/license/'];
         var currentPath = window.location.pathname;
         for (var i = 0; i < skipPaths.length; i++) {
@@ -802,11 +738,47 @@
                         window.location.href = '/pages/misc/under_maintenance/';
                     }
                 })
-                .catch(function(err) { /* ignore silently */ });
-        }, 15000); // Poll setiap 15 detik
+                .catch(function(err) {  });
+        }, 15000); 
     })();
     </script>
 
   </body>
 
 </html>
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>

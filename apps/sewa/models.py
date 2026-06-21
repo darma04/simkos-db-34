@@ -139,6 +139,17 @@ class TagihanSewa(models.Model):
             if not self.nomor_tagihan:
                 self.nomor_tagihan = self.generate_nomor()
             super().save(*args, **kwargs)
+            # Re-evaluate status after save in case jumlah berubah
+            if self.pk:
+                total_bayar = self.total_dibayar
+                if total_bayar >= self.jumlah:
+                    new_status = 'lunas'
+                elif total_bayar > 0:
+                    new_status = 'sebagian'
+                else:
+                    new_status = 'belum_bayar'
+                if self.status != new_status:
+                    type(self).objects.filter(pk=self.pk).update(status=new_status)
 
     def generate_nomor(self):
         """Generate nomor tagihan: TGH/2026/02/0001"""
@@ -169,8 +180,8 @@ class TagihanSewa(models.Model):
             metode = MetodePembayaran.objects.filter(kode=self.metode_pembayaran).first()
             if metode:
                 return metode.nama
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         return self.metode_pembayaran
 
     @property
@@ -233,8 +244,8 @@ class PembayaranSewa(models.Model):
             metode = MetodePembayaran.objects.filter(kode=self.metode_bayar).first()
             if metode:
                 return metode.nama
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         # Fallback: tampilkan kode langsung jika MetodePembayaran tidak ditemukan
         return self.metode_bayar
 
@@ -270,7 +281,41 @@ class PembayaranSewa(models.Model):
         tagihan = self.tagihan
         total_bayar = tagihan.total_dibayar
         if total_bayar >= tagihan.jumlah:
-            tagihan.status = 'lunas'
+            new_status = 'lunas'
         elif total_bayar > 0:
-            tagihan.status = 'sebagian'
-        tagihan.save()
+            new_status = 'sebagian'
+        else:
+            new_status = 'belum_bayar'
+        # Bypass save() override untuk hindari rekursi update_status
+        type(tagihan).objects.filter(pk=tagihan.pk).update(status=new_status)
+
+
+# ========================
+#  POST-DELETE SIGNAL: REVERT STATUS TAGIHAN
+# ========================
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+
+@receiver(post_delete, sender=PembayaranSewa)
+def _revert_tagihan_status_on_pembayaran_delete(sender, instance, **kwargs):
+    """Re-evaluate status tagihan setelah pembayaran dihapus."""
+    try:
+        tagihan = instance.tagihan
+        TagihanSewa.objects.filter(pk=tagihan.pk).exists() or None
+        tagihan.refresh_from_db()
+        total_bayar = tagihan.total_dibayar
+        if total_bayar >= tagihan.jumlah:
+            new_status = 'lunas'
+        elif total_bayar > 0:
+            new_status = 'sebagian'
+        else:
+            new_status = 'belum_bayar'
+        TagihanSewa.objects.filter(pk=tagihan.pk).update(status=new_status)
+    except Exception as e:
+        logger.warning("Error tidak terduga: %s", e)

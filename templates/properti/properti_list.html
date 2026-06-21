@@ -27,7 +27,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -42,7 +42,6 @@
         {% endif %}
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -67,7 +66,7 @@
                     </select>
                 </div>
             </div>
-            <!-- Baris 2: Pilih Kolom dan Tombol Filter -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -132,7 +131,6 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Properti</h5>
@@ -221,7 +219,7 @@
                                     <small class="text-muted" style="font-size: 0.75rem;">{{ total_properti }} Properti Terdaftar</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-primary d-flex align-items-center gap-1 mb-2"
@@ -249,7 +247,6 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -297,13 +294,14 @@
     .datatables-properti thead th { font-weight: 600; font-size: 0.8125rem; text-transform: none; letter-spacing: 0; }
     @media (max-width: 768px) {
         .card-datatable { overflow-x: hidden !important; -webkit-overflow-scrolling: touch; max-width: 100%; }
-        .datatables-properti { min-width: 950px !important; width: 950px !important; table-layout: auto !important; }
+        {% if properti_list %}.datatables-properti { min-width: 950px !important; width: 950px !important; table-layout: auto !important; }{% endif %}
         .dataTables_wrapper { overflow-x: hidden !important; max-width: 100% !important; }
     }
 </style>
 <script>
 $(document).ready(function() {
-    const table = $('#propertiTable').DataTable({
+    const table = {% if properti_list %}
+$('#propertiTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
             "sProcessing": "Sedang memproses...",
@@ -324,6 +322,7 @@ $(document).ready(function() {
         initComplete: function() { $('.dataTables_filter input').attr('placeholder', 'Cari properti...'); }
     });
 });
+{% endif %}
 
 function applyFilter() {
     const params = new URLSearchParams();
@@ -334,10 +333,6 @@ function applyFilter() {
 }
 function resetFilter() { window.location.href = '{% url "properti:properti_list" %}'; }
 
-// (toggleColumns diimplementasikan via SimkosExport.toggleColumns — lihat di bawah)
-
-// ── KONFIGURASI EXPORT PROPERTI ──
-// Kolom: 0=NamaProperti, 1=Tipe, 2=Alamat, 3=Kota, 4=JumlahKamar, 5=Status, 6=Aksi(skip)
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -355,42 +350,76 @@ var PDF_INFO = {
 var FOOTER_DATA = {};
 var FOOTER_LABEL = 'RINGKASAN ({{ total_properti }} Properti | Total Kamar: {{ total_kamar }} | Terisi: {{ kamar_terisi }})';
 
-
 function toggleColumns() { SimkosExport.toggleColumns('#propertiTable'); }
+
 function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=true; }); toggleColumns(); }
+
 function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=false; }); toggleColumns(); }
+
 function exportToExcel() { SimkosExport.buildExcel('#propertiTable', EXCEL_INFO, FOOTER_DATA, FOOTER_LABEL, 'DAFTAR PROPERTI', 'Daftar_Properti'); }
+
 function exportToPDF() { SimkosExport.buildPDF('#propertiTable', PDF_INFO, FOOTER_DATA, FOOTER_LABEL, 'DAFTAR PROPERTI', 'Daftar_Properti'); }
 
 var deleteId = null;
+
 function confirmDelete(id, name) {
+
     deleteId = id;
+
     $('#deleteName').text(name);
+
     $('#deleteModal .delete-error-msg').remove();
+
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
+
 }
+
 $('#confirmDeleteBtn').on('click', function() {
+
     if (!deleteId) return;
+
     const btn = $(this);
+
     const orig = btn.html();
+
     $('#deleteModal .delete-error-msg').remove();
+
     btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
+
     $.ajax({
+
         url: '/properti/' + deleteId + '/delete/', type: 'POST',
+
         headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+
         success: function(r) {
+
             if (r.success) { $('#deleteModal').modal('hide'); location.reload(); }
+
             else {
+
                 $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (r.message || 'Gagal menghapus data.') + '</div></div>');
+
             }
+
         },
+
         error: function(xhr) {
+
             var msg = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+
             try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch(e) {}
+
             $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>');
+
         },
+
         complete: function() { btn.prop('disabled', false).html(orig); deleteId = null; }
+
     });
+
 });
+
 </script>
+
 {% endblock page_js %}

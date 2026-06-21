@@ -15,8 +15,6 @@
         <span class="text-muted fw-light">Sewa / Pembayaran /</span> {{ title|default:"Catat Pembayaran" }}
     </h4>
 
-    
-    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.sewa.pembayaran %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -46,6 +44,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
@@ -66,7 +65,6 @@
                         </div>
                         {% endif %}
 
-                        <!-- Section: Pilih Tagihan -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-bill-line me-1"></i>Pilih Tagihan
                         </h6>
@@ -81,7 +79,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Section: Detail Pembayaran -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-money-dollar-circle-line me-1"></i>Detail Pembayaran
                         </h6>
@@ -106,7 +103,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Section: Bukti & Catatan -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-attachment-line me-1"></i>Bukti & Catatan
                         </h6>
@@ -135,7 +131,6 @@
             </div>
         </div>
 
-        <!-- Sidebar Info -->
         <div class="col-xl-4">
             <div class="card mb-4">
                 <div class="card-body">

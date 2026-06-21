@@ -40,7 +40,6 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -49,7 +48,7 @@
                     <input type="text" class="form-control" id="searchKategori" placeholder="Nama kategori...">
                 </div>
             </div>
-            <!-- Baris 2: Pilih Kolom dan Tombol -->
+            
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -142,7 +141,7 @@
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="2" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
                             <div class="d-flex align-items-center justify-content-start">
                                 <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
                                 <div class="text-start">
@@ -159,7 +158,6 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteKategoriBiayaModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -261,11 +259,11 @@
             max-width: 100%
         }
 
-        .datatables-kategori {
+        {% if kategori_list %}.datatables-kategori {
             min-width: 800px !important;
             width: 800px !important;
             table-layout: auto !important
-        }
+        }{% endif %}
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -275,6 +273,7 @@
 </style>
 <script>
     $(document).ready(function () {
+        {% if kategori_list %}
         var kategoriTable = $('#kategoriTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
@@ -306,24 +305,20 @@
             }
         });
 
-        // Custom search via Terapkan Filter
         window.applyFilter = function() {
             var searchTerm = $('#searchKategori').val();
             kategoriTable.search(searchTerm).draw();
         };
 
-        // Reset filter
         window.resetFilter = function() {
             $('#searchKategori').val('');
             kategoriTable.search('').draw();
         };
 
-        // Expose table for column toggle
         window.kategoriDT = kategoriTable;
+    {% endif %}
     });
 
-    // ── KONFIGURASI EXPORT KATEGORI BIAYA ──
-    // Kolom: 0=Nama Kategori, 1=Deskripsi, 2=Aksi(skip)
     var EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -338,7 +333,7 @@
         email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'© 2026 SIMKOS' }}"
     };
-    // Tidak ada kolom nominal → FOOTER_DATA kosong
+    
     var FOOTER_DATA  = {};
     var FOOTER_LABEL = 'RINGKASAN ({{ total_kategori }} Kategori Biaya)';
 
@@ -348,15 +343,14 @@
     function exportToExcel() { SimkosExport.buildExcel('#kategoriTable', EXCEL_INFO, FOOTER_DATA, FOOTER_LABEL, 'DAFTAR KATEGORI BIAYA', 'Kategori_Biaya'); }
     function exportToPDF()   { SimkosExport.buildPDF('#kategoriTable',   PDF_INFO,   FOOTER_DATA, FOOTER_LABEL, 'DAFTAR KATEGORI BIAYA', 'Kategori_Biaya'); }
 
-    // Tangani Hapus Kategori Biaya
     let deleteKategoriBiayaId = null;
 
     function confirmDelete(kategoriId, kategoriName) {
         deleteKategoriBiayaId = kategoriId;
         $('#deleteKategoriBiayaName').text(kategoriName);
-        // Hapus error message sebelumnya
+        
         $('#deleteKategoriBiayaModal .delete-error-msg').remove();
-        // Reset tombol
+        
         var btn = $('#confirmDeleteBtn');
         btn.prop('disabled', false).html('<i class="ri-delete-bin-line me-1"></i>Ya, Hapus Kategori');
         var modal = new bootstrap.Modal(document.getElementById('deleteKategoriBiayaModal'));
@@ -369,7 +363,7 @@
         var btn = $(this);
         var originalText = btn.html();
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...');
-        // Hapus error message sebelumnya
+        
         $('#deleteKategoriBiayaModal .delete-error-msg').remove();
 
         var csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -383,7 +377,7 @@
                     $('#deleteKategoriBiayaModal').modal('hide');
                     location.reload();
                 } else {
-                    // Tampilkan error di dalam modal popup
+                    
                     $('#deleteKategoriBiayaModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (response.message || 'Gagal menghapus kategori biaya.') + '</div></div>');
                     btn.prop('disabled', false).html(originalText);
                 }

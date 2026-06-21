@@ -24,14 +24,13 @@
         </a>
     </div>
 
+    
     <form method="post">
         {% csrf_token %}
         {% if not is_new and pengaturan %}
         <input type="hidden" name="pengaturan_id" value="{{ pengaturan.pk }}">
         {% endif %}
 
-        
-    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.hr.pengaturan_absensi %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -53,7 +52,7 @@
     {% endif %}
 
     <div class="row">
-            <!-- Informasi Umum -->
+            
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -73,7 +72,6 @@
                 </div>
             </div>
 
-            <!-- Jam Kerja -->
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -104,7 +102,6 @@
                 </div>
             </div>
 
-            <!-- Hari Kerja & Zona Waktu -->
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -132,7 +129,6 @@
                 </div>
             </div>
 
-            <!-- Lokasi Kantor -->
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -166,7 +162,6 @@
                 </div>
             </div>
 
-            <!-- Pengaturan Fitur -->
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -191,7 +186,6 @@
                 </div>
             </div>
 
-            <!-- Catatan -->
             <div class="col-lg-6 mb-4">
                 <div class="card h-100">
                     <div class="card-header">
@@ -207,7 +201,6 @@
             </div>
         </div>
 
-        <!-- Tombol Aksi -->
         <div class="row">
             <div class="col-12">
                 <div class="d-flex justify-content-between">
@@ -233,7 +226,7 @@
 </div>
 
 {% if not is_new and pengaturan and can_delete.hr %}
-<!-- Delete Modal -->
+
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -246,6 +239,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                
                 <form method="post" action="{% url 'hr:pengaturan-absensi-delete' pengaturan.pk %}" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">Ya, Hapus</button>

@@ -26,6 +26,11 @@
 from django.db import models, transaction
 from django.contrib.auth.models import User
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 class KategoriBiaya(models.Model):
     """
@@ -152,8 +157,8 @@ class TransaksiBiaya(models.Model):
             metode = MetodePembayaran.objects.filter(kode=self.metode_pembayaran).first()
             if metode:
                 return metode.nama
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         # Fallback: tampilkan kode langsung jika MetodePembayaran tidak ditemukan
         return self.metode_pembayaran
 

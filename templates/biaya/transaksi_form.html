@@ -16,8 +16,6 @@
         <span class="text-muted fw-light">Biaya /</span> {{ title }}
     </h4>
 
-    
-    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.biaya.transaksi %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -45,6 +43,7 @@
                     <i class="ri-money-dollar-circle-line me-2"></i>{{ title }}
                 </h5>
                 <div class="card-body">
+                    
                     <form method="post" enctype="multipart/form-data" id="biaya-form">
                         {% csrf_token %}
                         
@@ -117,7 +116,6 @@
                                 </div>
                                 {% endif %}
 
-                                <!-- Preview Area -->
                                 <div id="preview-container" class="text-center p-3 border rounded" style="display: none;">
                                     <p class="text-muted mb-2">Preview:</p>
                                     <img id="image-preview" src="" alt="Preview" class="img-fluid rounded" style="max-height: 150px; display: none;">
@@ -158,7 +156,7 @@
 
 {% block page_js %}
 <script>
-    // Preview upload bukti
+    
     document.querySelector('#id_bukti').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const previewContainer = document.querySelector('#preview-container');
@@ -170,7 +168,7 @@
             previewContainer.style.display = 'block';
             
             if (file.type.startsWith('image/')) {
-                // Image preview
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     imagePreview.src = e.target.result;
@@ -179,7 +177,7 @@
                 };
                 reader.readAsDataURL(file);
             } else if (file.type === 'application/pdf') {
-                // PDF indicator
+                
                 imagePreview.style.display = 'none';
                 pdfPreview.style.display = 'block';
                 pdfFilename.textContent = file.name;
@@ -189,7 +187,6 @@
         }
     });
 
-    // Format input mata uang
     document.querySelector('#id_jumlah').addEventListener('blur', function(e) {
         const val = parseFloat(e.target.value);
         if (!isNaN(val) && val > 0) {

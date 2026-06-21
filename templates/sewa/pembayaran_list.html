@@ -1,5 +1,29 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static humanize %}
+
+{% comment %}
+  ==========================================================================
+  SEWA - Daftar Pembayaran (List View)
+  ==========================================================================
+  Menampilkan daftar semua pembayaran menggunakan DataTables (tabel interaktif).
+  DataTables menyediakan: search, sorting, pagination, dan export PDF/Excel
+  secara otomatis tanpa perlu coding JavaScript tambahan.
+
+  FLOW DATA:
+  - URL: /sewa/ -> sewa.views.PembayaranListView- View: Mengambil data dari database via model Pembayaran- Template: File ini merender data ke HTML- Response: Browser menampilkan tabel + tombol aksi (edit/hapus/detail)
+
+  RELASI KE MODUL LAIN:
+  - apps/sewa/models.py -> Model Pembayaran (sumber data)- apps/sewa/views.py -> PembayaranListView (handler)- apps/sewa/urls.py -> URL routing ke view ini- apps/core/mixins.py -> ReadPermissionMixin (cek hak akses)- layout/layout_vertical.html -> Template induk (sidebar, header)
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Tampilan kolom tabel, tombol aksi, filter- BOLEH diubah: Tambah kolom baru (sesuaikan juga di views.py queryset)- JANGAN diubah: {% extends %} dan {% block %} structure- JANGAN diubah: class DataTables (break JavaScript)
+
+  TIPS & DEBUGGING:
+  - Error 'TemplateDoesNotExist'? Cek path di views.py template_name- Data tidak muncul? Cek get_queryset() di views.py- Tambah kolom? Edit <th> di <thead> dan <td> di <tbody>- Export gagal? Cek fungsi export_di_sewa_list() di <script>
+
+  ==========================================================================
+{% endcomment %}
+
 {% block title %}Pembayaran Sewa - SIMKOS{% endblock title %}
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -24,7 +48,6 @@
         {% endif %}
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -112,11 +135,10 @@
                 </tbody>
                 <tfoot class="table-footer-summary">
                     <tr>
-                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                        <td colspan="6" class="text-start ps-4 py-3" style="vertical-align: middle;">
                             <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ total_pembayaran }} Pembayaran</small></div></div>
                         </td>
                         <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;"><i class="ri-money-dollar-circle-line"></i><span>Rp {{ total_nominal|floatformat:0|intcomma }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Nominal</small></div></td>
-                        <td colspan="3" class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -149,7 +171,8 @@
 $(document).ready(function () {
     flatpickr('#startDate', { dateFormat: 'Y-m-d' });
     flatpickr('#endDate', { dateFormat: 'Y-m-d' });
-    window._pembayaranTable = $('#pembayaranTable').DataTable({
+    window._pembayaranTable = {% if pembayaran_list %}
+$('#pembayaranTable').DataTable({
         language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
         order: [[2, 'desc']], pageLength: 25, lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']], responsive: false,
         columnDefs: [{ orderable: false, targets: [6] }],
@@ -157,12 +180,11 @@ $(document).ready(function () {
         initComplete: function () { $('.dataTables_filter input').attr('placeholder', 'Cari pembayaran...'); }
     });
 });
+{% endif %}
 
 function applyFilter() { const p = new URLSearchParams(); if ($('#startDate').val()) p.append('start', $('#startDate').val()); if ($('#endDate').val()) p.append('end', $('#endDate').val()); if ($('#metodeFilter').val()) p.append('metode', $('#metodeFilter').val()); if ($('#searchPenyewa').val()) p.append('q', $('#searchPenyewa').val()); window.location.href = '{% url "sewa:pembayaran_list" %}?' + p.toString(); }
 function resetFilter() { window.location.href = '{% url "sewa:pembayaran_list" %}'; }
 
-// ── KONFIGURASI EXPORT ──
-// Kolom: 0=No.Pembayaran, 1=Penyewa, 2=Tanggal, 3=Jumlah, 4=Metode, 5=Keterangan, 6=Aksi(skip)
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -177,11 +199,10 @@ var PDF_INFO = {
     email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
 };
-// footerData: { indeks_kolom: nilai_total } — kolom 3 = Jumlah, angka murni (diformat otomatis jadi Rp)
+
 var FOOTER_DATA = { 3: {{ total_nominal|floatformat:0|default:0 }} };
 var FOOTER_LABEL = 'RINGKASAN ({{ total_pembayaran }} Pembayaran)';
 
-// Toggle, Export - semua via SimkosExport class terpusat
 function toggleColumns() { SimkosExport.toggleColumns('#pembayaranTable'); }
 function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=true; }); toggleColumns(); }
 function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(function(cb){ cb.checked=false; }); toggleColumns(); }
@@ -190,9 +211,12 @@ function exportToPDF() { SimkosExport.buildPDF('#pembayaranTable', PDF_INFO, FOO
 
 var deleteId = null;
 function confirmDelete(id, name) { deleteId = id; $('#deleteName').text(name); $('#deleteModal .delete-error-msg').remove();
+
     new bootstrap.Modal(document.getElementById('deleteModal')).show(); }
 $('#confirmDeleteBtn').on('click', function () { if (!deleteId) return; $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...'); $.ajax({ url: '/sewa/pembayaran/' + deleteId + '/delete/', type: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }, success: function (r) { if (r.success) { $('#deleteModal').modal('hide'); location.reload(); } else { $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (r.message || 'Gagal menghapus data.') + '</div></div>'); } }, error: function (xhr) { var msg = 'Terjadi kesalahan pada server. Silakan coba lagi.';
+
             try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch(e) {}
+
             $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>'); } }); });
 </script>
 {% endblock page_js %}

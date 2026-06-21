@@ -7,7 +7,8 @@
       "slug": "dashboard"
     },
     {
-      "menu_header": "MASTER DATA"
+      "menu_header": "MASTER DATA",
+      "permission": "properti:view,penyewa:view"
     },
     {
       "name": "Properti",
@@ -38,7 +39,8 @@
       "slug": "penyewa"
     },
     {
-      "menu_header": "TRANSAKSI"
+      "menu_header": "TRANSAKSI",
+      "permission": "sewa:view,biaya:view,hr:view"
     },
     {
       "name": "Sewa",
@@ -97,7 +99,8 @@
       ]
     },
     {
-      "menu_header": "LAPORAN"
+      "menu_header": "LAPORAN",
+      "permission": "laporan:view"
     },
     {
       "name": "Laporan",

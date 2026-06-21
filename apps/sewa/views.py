@@ -3,7 +3,58 @@
  SEWA VIEWS - Views untuk Kontrak Sewa, Tagihan, dan Pembayaran
 ==========================================================================
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
+# ==========================================================================
+# PANDUAN DJANGO UNTUK DEVELOPER PEMULA (baca ini sebelum mempelajari views)
+# ==========================================================================
+#
+# APA ITU CLASS-BASED VIEW (CBV)?
+# - CBV = class Python yang menangani HTTP request dan return response
+# - Django menyediakan CBV bawaan: ListView, CreateView, UpdateView, DeleteView
+# - Setiap CBV punya "lifecycle" (siklus hidup) yang bisa di-customize
+#
+# SIKLUS HIDUP CBV (urutan method yang dipanggil):
+# 1. as_view()     → Entry point, dipanggil oleh URL router
+# 2. dispatch()    → Tentukan method (GET/POST) → panggil get() atau post()
+# 3. get()/post()  → Handle request, kumpulkan data
+# 4. get_queryset()→ Ambil data dari database (bisa di-filter/optimasi)
+# 5. get_context_data() → Siapkan data untuk template (variabel {{ }})
+# 6. render()      → Gabungkan template + context → HTML response
+#
+# METHOD PENTING YANG SERING DI-OVERRIDE:
+# - get_queryset()     → Optimasi query (prefetch_related, select_related)
+# - get_context_data() → Tambah variabel ke template (self.context)
+# - form_valid()       → Proses setelah form divalidasi (sebelum save)
+# - get_success_url()  → URL redirect setelah operasi berhasil
+#
+# DECORATOR YANG SERING DIGUNAKAN:
+# @login_required       → User HARUS login, jika tidak → redirect ke /login/
+# @permission_required  → User harus punya permission tertentu (RBAC)
+# @require_http_methods → Batasi method yang diterima (GET, POST, dll)
+# @never_cache          → Response tidak boleh di-cache oleh browser
+#
+# POLA UMUM VIEW DI PROYEK INI:
+# class MyListView(SubModulePermissionMixin, ListView):
+#     module_name = 'nama_modul'          # Untuk pengecekan RBAC
+#     sub_module_name = 'nama_sub_modul'  # Sub-modul yang diakses
+#     model = MyModel                      # Model database yang dipakai
+#     template_name = 'modul/page.html'    # File HTML template
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context = TemplateLayout.init(self, context)  # WAJIB: setup layout
+#         context['data_tambahan'] = ...    # Tambah data custom
+#         return context
+# ==========================================================================
+
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from apps.core.mixins import (
+    ReadPermissionMixin, CreatePermissionMixin,
+    UpdatePermissionMixin, DeletePermissionMixin,
+)
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.http import JsonResponse
@@ -13,15 +64,20 @@ from apps.sewa.forms import KontrakSewaForm, TagihanSewaForm, PembayaranSewaForm
 from web_project import TemplateLayout
 
 
+
+
+
 # ╔══════════════════════════════════════════════════════════════╗
 # ║                    KONTRAK SEWA CRUD                         ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-class KontrakSewaListView(ListView):
+class KontrakSewaListView(ReadPermissionMixin, ListView):
     paginate_by = 50
     model = KontrakSewa
     template_name = 'sewa/kontrak_list.html'
     context_object_name = 'kontrak_list'
+    permission_module = 'sewa'
+    permission_sub_module = 'kontrak'
 
     def get_queryset(self):
         return super().get_queryset().select_related('penyewa', 'kamar', 'kamar__properti')
@@ -35,10 +91,12 @@ class KontrakSewaListView(ListView):
         return context
 
 
-class KontrakSewaDetailView(DetailView):
+class KontrakSewaDetailView(ReadPermissionMixin, DetailView):
     model = KontrakSewa
     template_name = 'sewa/kontrak_detail.html'
     context_object_name = 'kontrak'
+    permission_module = 'sewa'
+    permission_sub_module = 'kontrak'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -48,11 +106,14 @@ class KontrakSewaDetailView(DetailView):
         return context
 
 
-class KontrakSewaCreateView(CreateView):
+class KontrakSewaCreateView(CreatePermissionMixin, CreateView):
     model = KontrakSewa
     form_class = KontrakSewaForm
     template_name = 'sewa/kontrak_form.html'
     success_url = reverse_lazy('sewa:kontrak_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'kontrak'
+    permission_action = 'create'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -61,15 +122,19 @@ class KontrakSewaCreateView(CreateView):
         return context
 
     def form_valid(self, form):
+        form.instance.dibuat_oleh = self.request.user
         messages.success(self.request, 'Kontrak sewa berhasil dibuat')
         return super().form_valid(form)
 
 
-class KontrakSewaUpdateView(UpdateView):
+class KontrakSewaUpdateView(UpdatePermissionMixin, UpdateView):
     model = KontrakSewa
     form_class = KontrakSewaForm
     template_name = 'sewa/kontrak_form.html'
     success_url = reverse_lazy('sewa:kontrak_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'kontrak'
+    permission_action = 'write'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -82,9 +147,12 @@ class KontrakSewaUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class KontrakSewaDeleteView(DeleteView):
+class KontrakSewaDeleteView(DeletePermissionMixin, DeleteView):
     model = KontrakSewa
     success_url = reverse_lazy('sewa:kontrak_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'kontrak'
+    permission_action = 'delete'
 
     def delete(self, request, *args, **kwargs):
         from django.db.models import ProtectedError
@@ -106,11 +174,13 @@ class KontrakSewaDeleteView(DeleteView):
 # ║                    TAGIHAN SEWA CRUD                         ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-class TagihanSewaListView(ListView):
+class TagihanSewaListView(ReadPermissionMixin, ListView):
     paginate_by = 50
     model = TagihanSewa
     template_name = 'sewa/tagihan_list.html'
     context_object_name = 'tagihan_list'
+    permission_module = 'sewa'
+    permission_sub_module = 'tagihan'
 
     def get_queryset(self):
         return super().get_queryset().select_related('kontrak__penyewa')
@@ -130,11 +200,14 @@ class TagihanSewaListView(ListView):
         return context
 
 
-class TagihanSewaCreateView(CreateView):
+class TagihanSewaCreateView(CreatePermissionMixin, CreateView):
     model = TagihanSewa
     form_class = TagihanSewaForm
     template_name = 'sewa/tagihan_form.html'
     success_url = reverse_lazy('sewa:tagihan_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'tagihan'
+    permission_action = 'create'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -173,11 +246,14 @@ class TagihanSewaCreateView(CreateView):
         return super().form_valid(form)
 
 
-class TagihanSewaUpdateView(UpdateView):
+class TagihanSewaUpdateView(UpdatePermissionMixin, UpdateView):
     model = TagihanSewa
     form_class = TagihanSewaForm
     template_name = 'sewa/tagihan_form.html'
     success_url = reverse_lazy('sewa:tagihan_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'tagihan'
+    permission_action = 'write'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -224,9 +300,12 @@ class TagihanSewaUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class TagihanSewaDeleteView(DeleteView):
+class TagihanSewaDeleteView(DeletePermissionMixin, DeleteView):
     model = TagihanSewa
     success_url = reverse_lazy('sewa:tagihan_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'tagihan'
+    permission_action = 'delete'
 
     def delete(self, request, *args, **kwargs):
         from django.db.models import ProtectedError
@@ -249,11 +328,13 @@ class TagihanSewaDeleteView(DeleteView):
 # ║                   PEMBAYARAN SEWA CRUD                       ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-class PembayaranSewaListView(ListView):
+class PembayaranSewaListView(ReadPermissionMixin, ListView):
     paginate_by = 50
     model = PembayaranSewa
     template_name = 'sewa/pembayaran_list.html'
     context_object_name = 'pembayaran_list'
+    permission_module = 'sewa'
+    permission_sub_module = 'pembayaran'
 
     def get_queryset(self):
         return super().get_queryset().select_related('tagihan__kontrak__penyewa')
@@ -266,11 +347,14 @@ class PembayaranSewaListView(ListView):
         return context
 
 
-class PembayaranSewaCreateView(CreateView):
+class PembayaranSewaCreateView(CreatePermissionMixin, CreateView):
     model = PembayaranSewa
     form_class = PembayaranSewaForm
     template_name = 'sewa/pembayaran_form.html'
     success_url = reverse_lazy('sewa:pembayaran_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'pembayaran'
+    permission_action = 'create'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -294,9 +378,12 @@ class PembayaranSewaCreateView(CreateView):
         return response
 
 
-class PembayaranSewaDeleteView(DeleteView):
+class PembayaranSewaDeleteView(DeletePermissionMixin, DeleteView):
     model = PembayaranSewa
     success_url = reverse_lazy('sewa:pembayaran_list')
+    permission_module = 'sewa'
+    permission_sub_module = 'pembayaran'
+    permission_action = 'delete'
 
     def delete(self, request, *args, **kwargs):
         from django.db.models import ProtectedError
@@ -318,11 +405,13 @@ class PembayaranSewaDeleteView(DeleteView):
 # ║                    CETAK TAGIHAN                             ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-class TagihanCetakView(DetailView):
+class TagihanCetakView(ReadPermissionMixin, DetailView):
     """Halaman cetak tagihan/invoice format A4."""
     model = TagihanSewa
     template_name = 'sewa/tagihan_cetak.html'
     context_object_name = 'tagihan'
+    permission_module = 'sewa'
+    permission_sub_module = 'tagihan'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -336,8 +425,8 @@ class TagihanCetakView(DetailView):
         try:
             from apps.pengaturan.models import PengaturanPerusahaan
             context['perusahaan'] = PengaturanPerusahaan.load()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         return context
 
 
@@ -345,11 +434,13 @@ class TagihanCetakView(DetailView):
 # ║                  PEMBAYARAN DETAIL & CETAK                    ║
 # ╚══════════════════════════════════════════════════════════════╝
 
-class PembayaranDetailView(DetailView):
+class PembayaranDetailView(ReadPermissionMixin, DetailView):
     """Halaman detail pembayaran."""
     model = PembayaranSewa
     template_name = 'sewa/pembayaran_detail.html'
     context_object_name = 'pembayaran'
+    permission_module = 'sewa'
+    permission_sub_module = 'pembayaran'
 
     def get_context_data(self, **kwargs):
         context = TemplateLayout.init(self, super().get_context_data(**kwargs))
@@ -362,11 +453,13 @@ class PembayaranDetailView(DetailView):
         return context
 
 
-class PembayaranCetakView(DetailView):
+class PembayaranCetakView(ReadPermissionMixin, DetailView):
     """Halaman cetak kwitansi pembayaran format A4."""
     model = PembayaranSewa
     template_name = 'sewa/pembayaran_cetak.html'
     context_object_name = 'pembayaran'
+    permission_module = 'sewa'
+    permission_sub_module = 'pembayaran'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -380,7 +473,7 @@ class PembayaranCetakView(DetailView):
         try:
             from apps.pengaturan.models import PengaturanPerusahaan
             context['perusahaan'] = PengaturanPerusahaan.load()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
         return context
 

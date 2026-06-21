@@ -27,7 +27,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -63,7 +63,6 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="row">
         <div class="col-12">
             <div class="card mb-4">
@@ -125,7 +124,6 @@
                 </div>
             </div>
 
-            <!-- Description Card -->
             {% if transaksi.deskripsi %}
             <div class="card">
                 <div class="card-header">
@@ -137,7 +135,6 @@
             </div>
             {% endif %}
 
-            <!-- Riwayat Aktivitas Transaksi Biaya -->
             <div class="card mt-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="ri-history-line me-2"></i>Riwayat Aktivitas Transaksi Biaya</h5>
@@ -202,7 +199,7 @@
 {% block page_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Approve button
+    
     const btnApprove = document.getElementById('btn-approve');
     if (btnApprove) {
         btnApprove.addEventListener('click', function() {
@@ -227,7 +224,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Reject button
     const btnReject = document.getElementById('btn-reject');
     if (btnReject) {
         btnReject.addEventListener('click', function() {

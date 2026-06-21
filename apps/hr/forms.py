@@ -21,6 +21,11 @@
 from django import forms
 from apps.hr.models import Departemen, Jabatan, Karyawan, Absensi, Penggajian, FotoWajah, PengaturanAbsensi
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 class DepartemenForm(forms.ModelForm):
     """Form untuk Departemen"""
@@ -153,8 +158,8 @@ class PenggajianForm(forms.ModelForm):
             choices = [('', 'Pilih Metode Pembayaran')]
             choices += [(m.kode, m.nama) for m in metode_qs]
             self.fields['metode_pembayaran'].choices = choices
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Error tidak terduga: %s", e)
 
 
 class FotoWajahForm(forms.ModelForm):

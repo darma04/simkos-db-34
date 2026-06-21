@@ -27,7 +27,6 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="mb-4"><i class="ri-shopping-cart-line me-2"></i>Laporan Penjualan</h4>
 
-    <!-- 4 Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-lg-3 col-sm-6">
             <div class="card">
@@ -99,7 +98,6 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -244,7 +242,6 @@
         </div>
     </div>
 
-    <!-- ========== Sales Order Table ========== -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between">
             <div>
@@ -331,7 +328,7 @@
                                         Order</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;">
                             <div class="d-flex flex-column align-items-center">
                                 <span class="badge bg-label-success d-flex align-items-center gap-1 mb-1"
@@ -370,7 +367,6 @@
         </div>
     </div>
 
-    <!-- ========== POS Transaction Table ========== -->
     <div class="card">
         <div class="card-header d-flex justify-content-between">
             <div>
@@ -495,9 +491,7 @@
     }
 </style>
 <script>
-    // ========================
-    // DataTables Initialization
-    // ========================
+    
     $(document).ready(function () {
         const dtConfig = {
             language: { "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sInfo": "_START_ - _END_ dari _TOTAL_ data", "sSearch": "Cari:", "oPaginate": { "sPrevious": "Sebelumnya", "sNext": "Selanjutnya" } },
@@ -517,9 +511,6 @@
         {% endif %}
     });
 
-    // ========================
-    // Column Toggle - Sales Order
-    // ========================
     function toggleSOColumns() {
         if (!window.soTable) return;
         document.querySelectorAll('.so-column-checkbox').forEach(function(cb) {
@@ -535,9 +526,6 @@
         toggleSOColumns();
     }
 
-    // ========================
-    // Column Toggle - POS
-    // ========================
     function togglePOSColumns() {
         if (!window.posTable) return;
         document.querySelectorAll('.pos-column-checkbox').forEach(function(cb) {
@@ -553,9 +541,6 @@
         togglePOSColumns();
     }
 
-    // ========================
-    // Fungsi Filter (Server-side via URL params)
-    // ========================
     function applyFilter() {
         var startDate = document.getElementById('startDate').value;
         var endDate = document.getElementById('endDate').value;
@@ -569,9 +554,6 @@
         window.location.href = window.location.pathname;
     }
 
-    // ========================
-    // Company Info for PDF
-    // ========================
     const COMPANY_INFO = {
         name: "{{ export_pdf_template.header_nama_perusahaan }}",
         address: "{{ export_pdf_template.header_alamat }}",
@@ -581,19 +563,16 @@
         copyright: "{{ export_pdf_template.footer_copyright }}"
     };
 
-    // ========================
-    // Generic Export Excel Function
-    // ========================
     function genericExportExcel(tableId, filename, titleLabel) {
         var table = document.getElementById(tableId);
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         var html = '<table border="1">';
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
 
         var headerRow = table.querySelector('thead tr');
         var totalCols = headerRow ? headerRow.querySelectorAll('th').length : 0;
-        // Exclude Aksi column (last for SO table)
+        
         var excludeLast = (tableId === 'salesTable') ? 1 : 0;
 
         if (headerRow) {
@@ -621,7 +600,6 @@
             });
         }
 
-        // Tambah Ringkasan dari tfoot
         var tfoot = table.querySelector('tfoot');
         if (tfoot) {
             var countText = tfoot.querySelector('small.text-muted') ? tfoot.querySelector('small.text-muted').textContent.trim() : '';
@@ -631,7 +609,7 @@
             badges.forEach(function(badge) {
                 html += '<td>' + badge.textContent.trim() + '</td>';
             });
-            // Fill remaining cols
+            
             var remaining = (totalCols - excludeLast) - 3 - badges.length;
             for (var i = 0; i < remaining; i++) { html += '<td></td>'; }
             html += '</tr>';
@@ -646,13 +624,10 @@
         link.click();
     }
 
-    // ========================
-    // Generic Export PDF Function
-    // ========================
     function genericExportPDF(tableId, filename, docTitle, excludeLastCol) {
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
         var table = document.getElementById(tableId);
-        if (!table) { alert('Tabel tidak ditemukan!'); return; }
+        if (!table) { showExportError(); return; }
 
         var headers = [];
         var headerRow = table.querySelector('thead tr');
@@ -690,7 +665,6 @@
             });
         }
 
-        // Tambah baris Ringkasan dari tfoot
         var tfoot = table.querySelector('tfoot');
         if (tfoot) {
             var countText = tfoot.querySelector('small.text-muted') ? tfoot.querySelector('small.text-muted').textContent.trim() : '';
@@ -763,16 +737,46 @@
         pdfMake.createPdf(docDefinition).download(filename + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
     }
 
-    // ========================
-    // Ekspor SO
-    // ========================
     function exportSOExcel() { genericExportExcel('salesTable', 'Laporan_Sales_Order', 'Sales Order'); }
     function exportSOPDF()   { genericExportPDF('salesTable', 'Laporan_Sales_Order', 'LAPORAN SALES ORDER', 1); }
 
-    // ========================
-    // Ekspor POS
-    // ========================
     function exportPOSExcel() { genericExportExcel('posTable', 'Laporan_Transaksi_POS', 'Transaksi POS'); }
     function exportPOSPDF()   { genericExportPDF('posTable', 'Laporan_Transaksi_POS', 'LAPORAN TRANSAKSI POS', 0); }
 </script>
 {% endblock page_js %}
+
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning align-items-center py-3">
+                <h5 class="modal-title text-dark mb-0">
+                    <i class="ri-error-warning-line me-2"></i>Export Gagal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-3">
+                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
+                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExportError() {
+    var modal = document.getElementById('exportErrorModal');
+    if (modal) {
+        new bootstrap.Modal(modal).show();
+    } else {
+        alert('Tabel tidak ditemukan!');
+    }
+}
+</script>

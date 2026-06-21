@@ -157,6 +157,27 @@ def has_sub_perm(user, full_path):
         return False
 
 
+@register.filter(name='has_permission')
+def has_permission_filter(user, permission_str):
+    """Check if user has module-level permission.
+    Usage: request.user|has_permission:'produk:view'
+    Format: module:action (e.g., 'produk:view', 'sewa:create')
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    try:
+        parts = permission_str.split(':')
+        if len(parts) != 2:
+            return False
+        module, action = parts
+        from apps.core.permissions import has_permission as check_perm
+        return check_perm(user, action, module.strip())
+    except Exception:
+        return False
+
+
 @register.filter(name='attr')
 def attr(obj, attr_name):
     """

@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    <!-- Header -->
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -43,7 +43,6 @@
         {% endif %}
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -138,7 +137,6 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Jabatan</h5>
@@ -243,19 +241,18 @@
                                     <br><small class="text-muted">Total {{ total_jabatan|default:0 }} Jabatan</small>
                                 </div>
                             </div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3 text-center">
                             <strong class="text-success">Rp {{ total_gaji|floatformat:0|default:0 }}</strong>
                             <br><small class="text-muted">Total Gaji Pokok</small>
                         </td>
-                        <td colspan="2"></td>
+                        <td colspan="2"></td><td class="py-3"></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
 
-    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -416,6 +413,7 @@ function confirmDelete(id, name) {
     deleteId = id;
     $('#deleteName').text(name);
     $('#deleteModal .delete-error-msg').remove();
+
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 

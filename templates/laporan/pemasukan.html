@@ -1,5 +1,29 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static humanize %}
+
+{% comment %}
+  ==========================================================================
+  LAPORAN - Pemasukan
+  ==========================================================================
+  Halaman laporan pemasukan dengan filter tanggal dan export.
+  Laporan menggunakan DataTables untuk tabel interaktif dan
+  ApexCharts untuk visualisasi grafik.
+
+  FLOW DATA:
+  - URL: /laporan/pemasukan/- View: Filter data berdasarkan tanggal + agregasi- Template: Tabel + grafik + tombol export- Export: PDF via pdfmake, Excel via SimkosExport
+
+  RELASI KE MODUL LAIN:
+  - apps/laporan/views.py -> View laporan- Semua model sumber data (produk, penjualan, pembelian, dll)- DataTables + ApexCharts -> Visualisasi
+
+  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
+  - BOLEH diubah: Filter, kolom tabel, jenis chart- BOLEH ditambah: Metrik baru (sesuaikan query di views.py)- JANGAN diubah: Format export (break SimkosExport)
+
+  TIPS & DEBUGGING:
+  - Laporan kosong? Cek filter tanggal di views.py- Export gagal? Cek apakah tabel punya data (bukan kosong)
+
+  ==========================================================================
+{% endcomment %}
+
 {% block title %}Laporan Pemasukan - SIMKOS{% endblock title %}
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -18,7 +42,6 @@
         <div><h4 class="mb-1"><i class="ri-money-dollar-circle-line me-2"></i>Laporan Pemasukan</h4><p class="text-muted mb-0">Riwayat pemasukan dari pembayaran sewa</p></div>
     </div>
 
-    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -56,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
     <div class="row mb-4 g-3">
         <div class="col-6 col-md-6">
             <div class="card h-100">
@@ -80,7 +102,6 @@
         </div>
     </div>
 
-    <!-- Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Rincian Pemasukan</h5>
@@ -101,7 +122,7 @@
                     <tr>
                         <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
                             <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi }} Transaksi</small></div></div>
-                        </td>
+                        </td><td class="py-3"></td><td class="py-3"></td>
                         <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 120px;"><i class="ri-money-dollar-circle-line"></i><span>Rp {{ total_pemasukan|floatformat:0|intcomma }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Pemasukan</small></div></td>
                         <td class="py-3"></td>
                     </tr>
@@ -126,8 +147,6 @@ $(document).ready(function(){
     {% endif %}
 });
 
-// ── KONFIGURASI EXPORT PEMASUKAN ──
-// Kolom: 0=No.Pembayaran, 1=Penyewa, 2=Tanggal, 3=Jumlah, 4=Metode
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -142,7 +161,7 @@ var PDF_INFO = {
     email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
 };
-// footerData: kolom 3 = Jumlah (nilai total pemasukan sebagai angka murni)
+
 var FOOTER_DATA  = { 3: {{ total_pemasukan|floatformat:0|default:0 }} };
 var FOOTER_LABEL = 'RINGKASAN ({{ total_transaksi }} Transaksi Pemasukan)';
 
