@@ -164,7 +164,7 @@
                             <a class="badge bg-label-secondary" href="{% url 'sewa:tagihan_cetak' t.pk %}" target="_blank"><i class="ri-printer-line me-1"></i>Cetak</a>
                             {% endif %}
                         </td>
-                    </tr>
+                    <td>-</td></tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-footer-summary">
@@ -178,7 +178,7 @@
                         <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-2" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 80px;"><i class="ri-check-double-line"></i><span>{{ tagihan_lunas }}</span></span><small class="text-muted fw-medium" style="font-size: 0.75rem;">Lunas</small></div></td>
                         <td class="py-3" style="vertical-align: middle;"></td>
                         <td class="py-3"></td>
-                    </tr>
+                    <td class="py-3"></td></tr>
                 </tfoot>
             </table>
         </div>
