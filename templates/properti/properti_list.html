@@ -35,11 +35,6 @@
             </h4>
             <p class="text-muted mb-0">Kelola data properti kost & kontrakan</p>
         </div>
-        {% if can_create.properti %}
-        <a href="{% url 'properti:properti_add' %}" class="btn btn-primary">
-            <i class="ri-add-line me-1"></i>Tambah Properti
-        </a>
-        {% endif %}
     </div>
 
     <!-- Filter Card -->
@@ -262,11 +257,6 @@
                     Daftar properti masih kosong.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    {% if can_create.properti %}
-                    <a href="{% url 'properti:properti_add' %}" class="btn btn-primary btn-lg">
-                        <i class="ri-add-line me-1"></i>Tambah Properti
-                    </a>
-                    {% endif %}
                 </div>
             </div>
         </div>

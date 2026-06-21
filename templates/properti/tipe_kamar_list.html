@@ -17,9 +17,6 @@
 <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div><h4 class="mb-1"><i class="ri-home-gear-line me-2"></i>Daftar Tipe Kamar</h4><p class="text-muted mb-0">Kelola tipe kamar dan harga sewa</p></div>
-        {% if can_create.properti %}
-        <a href="{% url 'properti:tipe_kamar_add' %}" class="btn btn-primary"><i class="ri-add-line me-1"></i>Tambah Tipe</a>
-        {% endif %}
     </div>
 
     <!-- Filter Card -->
@@ -142,11 +139,6 @@
                     Daftar tipe kamar masih kosong.
                 </p>
                 <div class="d-flex gap-3 justify-content-center flex-wrap pt-1">
-                    {% if can_create.properti %}
-                    <a href="{% url 'properti:tipe_kamar_add' %}" class="btn btn-primary btn-lg">
-                        <i class="ri-add-line me-1"></i>Tambah Tipe
-                    </a>
-                    {% endif %}
                 </div>
             </div>
         </div>
