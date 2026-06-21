@@ -183,7 +183,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="logTable">
                 <thead>
                     <tr>
@@ -325,6 +325,7 @@
     $(document).ready(function () {
         {% if logs %}
         table = $('#logTable').DataTable({
+            scrollX: true,
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",

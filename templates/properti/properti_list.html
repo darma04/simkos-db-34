@@ -143,7 +143,7 @@
                 </button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="datatables-properti table table-hover" id="propertiTable" style="width:100%">
                 <thead>
                     <tr>
@@ -268,6 +268,7 @@
 $(document).ready(function() {
     const table = {% if properti_list %}
 $('#propertiTable').DataTable({
+            scrollX: true,
         language: {
             "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
             "sProcessing": "Sedang memproses...",

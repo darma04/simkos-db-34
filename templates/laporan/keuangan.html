@@ -207,7 +207,7 @@
                 <button class="btn btn-label-danger btn-sm" onclick="exportTablePDF('tblPemasukan','RINCIAN PEMASUKAN',{4:{{ total_pemasukan|floatformat:0|default:0 }}},'RINGKASAN ({{ total_trx_masuk }} Transaksi)')"><i class="ri-file-pdf-line me-1"></i>PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="tblPemasukan">
                 <thead><tr><th>Tanggal</th><th>No. Pembayaran</th><th>Penyewa</th><th>Metode</th><th class="text-end">Jumlah</th></tr></thead>
                 <tbody>
@@ -237,7 +237,7 @@
                 <button class="btn btn-label-danger btn-sm" onclick="exportTablePDF('tblPengeluaran','RINCIAN PENGELUARAN',{3:{{ total_pengeluaran|floatformat:0|default:0 }}},'RINGKASAN ({{ total_trx_keluar }} Transaksi)')"><i class="ri-file-pdf-line me-1"></i>PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="tblPengeluaran">
                 <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th class="text-end">Jumlah</th></tr></thead>
                 <tbody>
@@ -289,6 +289,7 @@ $(document).ready(function() {
 
     if ($('#tblPemasukan').length) {
         $('#tblPemasukan').DataTable({
+            scrollX: true,
             language: DT_LANG,
             order: [[0, 'desc']],
             pageLength: 10,
@@ -301,6 +302,7 @@ $(document).ready(function() {
 
     if ($('#tblPengeluaran').length) {
         $('#tblPengeluaran').DataTable({
+            scrollX: true,
             language: DT_LANG,
             order: [[0, 'desc']],
             pageLength: 10,

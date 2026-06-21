@@ -110,7 +110,7 @@
                 <button class="btn btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+        <div class="card-datatable">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th>No. Pembayaran</th><th>Penyewa</th><th>Tanggal</th><th>Jumlah</th><th>Metode</th></tr></thead>
                 <tbody>
@@ -131,6 +131,7 @@ $(document).ready(function(){
     flatpickr('#endDate', { dateFormat: 'Y-m-d' });
     {% if pembayaran_list %}
     dataTable = $('#dataTable').DataTable({
+            scrollX: true,
         language:{sSearch:"Cari:",sLengthMenu:"Tampilkan _MENU_ data",sInfo:"Menampilkan _START_ sampai _END_ dari _TOTAL_ data",sInfoEmpty:"Menampilkan 0 sampai 0 dari 0 data",sZeroRecords:"Tidak ditemukan",oPaginate:{sNext:"Selanjutnya",sPrevious:"Sebelumnya"}},
         order:[[2,'desc']],pageLength:25,lengthMenu:[[10,25,50,-1],['10','25','50','Semua']],responsive:false,
         dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
