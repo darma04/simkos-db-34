@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -45,6 +45,7 @@
         {% endif %}
     </div>
 
+    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-lg-3 col-sm-6">
             <div class="card">
@@ -116,6 +117,7 @@
         </div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -185,6 +187,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Slip Gaji</h5>
@@ -277,10 +280,42 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="2" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div>
+                                    <strong>RINGKASAN</strong>
+                                    <br><small class="text-muted">{{ total_slip|default:0 }} Slip Gaji</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-primary" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_gaji_pokok|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Gaji Pokok</small>
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-info" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_tunjangan|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Tunjangan</small>
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-danger" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ total_potongan|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Potongan</small>
+                        </td>
+                        <td class="py-3 text-center">
+                            <span class="badge bg-label-success" style="font-size:0.85rem;padding:0.4rem 0.6rem;">Rp {{ grand_total|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Gaji Bersih</small>
+                        </td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -326,8 +361,8 @@
 let dataTable;
 
 $(document).ready(function() {
-    dataTable = {% if penggajian_list %}
-$('#penggajianTable').DataTable({
+    {% if penggajian_list %}
+    dataTable = $('#penggajianTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data", "sSearch": "Cari:",
             "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
@@ -338,10 +373,10 @@ $('#penggajianTable').DataTable({
         lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
         responsive: false,
         columnDefs: [{ orderable: false, targets: [7] }],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
     });
+    {% endif %}
 });
-{% endif %}
 
 function applyFilter() {
     if (!dataTable) return;
@@ -371,6 +406,8 @@ function toggleColumns() { SimkosExport.toggleColumns('#penggajianTable'); }
 function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb=>cb.checked=true); toggleColumns(); }
 function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb=>cb.checked=false); toggleColumns(); }
 
+// ── KONFIGURASI EXPORT PENGGAJIAN ──
+// Kolom: 0=Periode, 1=Karyawan, 2=Gaji Pokok, 3=Tunjangan, 4=Potongan, 5=Gaji Bersih, 6=Status, 7=Aksi(skip)
 var EXCEL_INFO_GAJ = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -385,7 +422,7 @@ var PDF_INFO_GAJ = {
     email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
 };
-
+// footerData: kolom 2=GajiPokok, 3=Tunjangan, 4=Potongan, 5=Gaji Bersih
 var FOOTER_DATA_GAJ  = { 2: {{ total_gaji_pokok|floatformat:0|default:0 }}, 3: {{ total_tunjangan|floatformat:0|default:0 }}, 4: {{ total_potongan|floatformat:0|default:0 }}, 5: {{ grand_total|floatformat:0|default:0 }} };
 var FOOTER_LABEL_GAJ = 'RINGKASAN ({{ total_slip|default:0 }} Slip Gaji)';
 
@@ -397,7 +434,6 @@ function confirmDelete(id, name) {
     deleteId = id;
     $('#deleteName').text(name);
     $('#deleteModal .delete-error-msg').remove();
-
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 

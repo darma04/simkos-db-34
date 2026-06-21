@@ -13,7 +13,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header Halaman (hanya tampil di layar, disembunyikan saat cetak) -->
     <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
         <div>
             <h4 class="mb-1"><i class="ri-file-list-3-line me-2"></i>Detail Slip Gaji</h4>
@@ -29,9 +29,13 @@
         </div>
     </div>
 
+    <!-- Konten Slip Gaji (tampil di layar dan cetak) -->
     <div class="card" id="slipGaji">
         <div class="card-body p-4 p-md-5">
 
+            <!-- ============================================ -->
+            <!--  HEADER CETAK: Logo + Info Perusahaan         -->
+            <!-- ============================================ -->
             <div class="print-header">
                 <table style="width: 100%; border: none;">
                     <tr>
@@ -52,6 +56,9 @@
                 <p class="slip-period">Periode: <strong>{{ slip.periode }}</strong></p>
             </div>
 
+            <!-- ============================================ -->
+            <!--  INFO KARYAWAN (tampil di layar & cetak)      -->
+            <!-- ============================================ -->
             <div class="employee-info-section">
                 <div class="row">
                     <div class="col-md-6 col-6">
@@ -95,8 +102,11 @@
 
             <hr class="my-4">
 
+            <!-- ============================================ -->
+            <!--  TABEL PENDAPATAN & POTONGAN                  -->
+            <!-- ============================================ -->
             <div class="row">
-                
+                <!-- Kolom Pendapatan -->
                 <div class="col-md-6 col-12 mb-4">
                     <div class="section-header section-header-income">
                         <i class="ri-add-circle-line me-1"></i>PENDAPATAN
@@ -147,6 +157,7 @@
                     </table>
                 </div>
 
+                <!-- Kolom Potongan -->
                 <div class="col-md-6 col-12 mb-4">
                     <div class="section-header section-header-deduction">
                         <i class="ri-subtract-line me-1"></i>POTONGAN
@@ -186,6 +197,9 @@
                 </div>
             </div>
 
+            <!-- ============================================ -->
+            <!--  GAJI BERSIH                                  -->
+            <!-- ============================================ -->
             <div class="net-salary-box">
                 <div class="row align-items-center">
                     <div class="col-6">
@@ -204,6 +218,9 @@
             </div>
             {% endif %}
 
+            <!-- ============================================ -->
+            <!--  TANDA TANGAN (khusus tampilan cetak)         -->
+            <!-- ============================================ -->
             <div class="signature-section">
                 <div class="row mt-5">
                     <div class="col-4 text-center">
@@ -238,15 +255,21 @@
 
 {% block page_css %}
 <style>
-    
+    /* ============================================
+       STYLING LAYAR (tampilan detail di dashboard)
+       ============================================ */
+
+    /* Header cetak: sembunyikan di layar */
     .print-header {
         display: none;
     }
 
+    /* Section tanda tangan: sembunyikan di layar */
     .signature-section {
         display: none;
     }
 
+    /* Info karyawan */
     .info-table {
         border: none;
         margin-bottom: 0;
@@ -266,6 +289,7 @@
         color: #a3a4cc;
     }
 
+    /* Section header (Pendapatan / Potongan) */
     .section-header {
         font-weight: 700;
         font-size: 0.85rem;
@@ -283,6 +307,7 @@
         color: #ea5455;
     }
 
+    /* Tabel slip */
     .slip-table {
         margin-bottom: 0;
     }
@@ -297,6 +322,7 @@
         padding: 8px 12px;
     }
 
+    /* Total row */
     .total-row-income {
         background: rgba(105, 108, 255, 0.1) !important;
     }
@@ -312,6 +338,7 @@
         border-top: 2px solid #ea5455 !important;
     }
 
+    /* Gaji bersih box */
     .net-salary-box {
         background: linear-gradient(135deg, #7367f0 0%, #9e95f5 100%);
         border-radius: 10px;
@@ -330,8 +357,11 @@
         color: #fff;
     }
 
+    /* ============================================
+       STYLING CETAK (@media print)
+       ============================================ */
     @media print {
-        
+        /* Sembunyikan elemen dashboard */
         .layout-navbar,
         .layout-menu,
         .layout-menu-toggle,
@@ -342,6 +372,7 @@
             display: none !important;
         }
 
+        /* Reset layout */
         body, html {
             background: #fff !important;
             color: #000 !important;
@@ -357,6 +388,7 @@
             max-width: 100% !important;
         }
 
+        /* Card reset */
         #slipGaji {
             box-shadow: none !important;
             border: none !important;
@@ -367,6 +399,7 @@
             color: #000 !important;
         }
 
+        /* Tampilkan header cetak */
         .print-header {
             display: block !important;
             margin-bottom: 20px;
@@ -413,6 +446,7 @@
             margin-bottom: 15px;
         }
 
+        /* Info karyawan saat cetak */
         .employee-info-section {
             background: #f8f9fa !important;
             border: 1px solid #ddd;
@@ -431,6 +465,7 @@
             color: #000 !important;
         }
 
+        /* Status badge saat cetak */
         .badge {
             display: inline-block !important;
             border: 1px solid #333;
@@ -441,6 +476,7 @@
             background: #fff !important;
         }
 
+        /* Section header saat cetak */
         .section-header {
             border-radius: 4px 4px 0 0;
             padding: 6px 10px;
@@ -459,6 +495,7 @@
             border-bottom: none;
         }
 
+        /* Tabel saat cetak */
         .slip-table {
             border-collapse: collapse;
         }
@@ -487,6 +524,7 @@
             border-top: 2px solid #c62828 !important;
         }
 
+        /* Gaji bersih saat cetak */
         .net-salary-box {
             background: #1a1a2e !important;
             border-radius: 6px;
@@ -502,6 +540,7 @@
             font-size: 14pt;
         }
 
+        /* Tampilkan tanda tangan & footer saat cetak */
         .signature-section {
             display: block !important;
             margin-top: 40px;
@@ -534,10 +573,12 @@
             color: #999 !important;
         }
 
+        /* Catatan saat cetak */
         .text-muted {
             color: #555 !important;
         }
 
+        /* Page setup */
         @page {
             size: A4;
             margin: 15mm 15mm;

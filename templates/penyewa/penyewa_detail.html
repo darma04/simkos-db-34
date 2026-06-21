@@ -10,7 +10,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <nav aria-label="breadcrumb">
@@ -30,9 +30,9 @@
     </div>
 
     <div class="row g-3">
-        
+        <!-- Left Column: Profile Card + Catatan -->
         <div class="col-lg-4">
-            
+            <!-- Profile Card -->
             <div class="card mb-3">
                 <div class="card-body text-center pt-4">
                     <div class="d-flex justify-content-center mb-3">
@@ -89,6 +89,7 @@
                 </div>
             </div>
 
+            <!-- Catatan -->
             {% if penyewa.catatan %}
             <div class="card">
                 <div class="card-header"><h5 class="mb-0"><i class="ri-sticky-note-line me-2"></i>Catatan</h5></div>
@@ -97,10 +98,11 @@
             {% endif %}
         </div>
 
+        <!-- Right Column -->
         <div class="col-lg-8">
-            
+            <!-- Row: Alamat/Kontak + Foto KTP side by side -->
             <div class="row g-3 mb-3">
-                
+                <!-- Alamat & Kontak Darurat -->
                 <div class="{% if penyewa.foto_ktp %}col-md-6{% else %}col-md-12{% endif %}">
                     <div class="card h-100">
                         <div class="card-header"><h5 class="mb-0"><i class="ri-map-pin-line me-2"></i>Alamat & Kontak Darurat</h5></div>
@@ -116,7 +118,7 @@
                         </div>
                     </div>
                 </div>
-                
+                <!-- Foto KTP -->
                 {% if penyewa.foto_ktp %}
                 <div class="col-md-6">
                     <div class="card h-100">
@@ -131,6 +133,7 @@
                 {% endif %}
             </div>
 
+            <!-- Riwayat Kontrak -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Riwayat Kontrak Sewa</h5>

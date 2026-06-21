@@ -13,7 +13,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="mb-4">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb breadcrumb-style1">
@@ -27,6 +27,8 @@
         <p class="text-muted mb-0">Isi form di bawah untuk {{ action|lower }} metode pembayaran</p>
     </div>
 
+    
+    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.pengaturan.metode_pembayaran %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -54,12 +56,11 @@
                     <h5 class="mb-0">Informasi Metode Pembayaran</h5>
                 </div>
                 <div class="card-body">
-                    
                     <form method="POST" enctype="multipart/form-data" id="metodePembayaranForm">
                         {% csrf_token %}
 
                         <div class="row g-3">
-                            
+                            <!-- Gambar Upload -->
                             <div class="col-12">
                                 <label class="form-label">Gambar/Logo Metode Pembayaran</label>
                                 <div class="d-flex align-items-start gap-4 mb-3">
@@ -92,6 +93,7 @@
                                 </div>
                             </div>
 
+                            <!-- Nama Metode -->
                             <div class="col-md-12">
                                 <label class="form-label" for="id_nama">
                                     Nama Metode <span class="text-danger">*</span>
@@ -111,6 +113,7 @@
                                 <small class="text-muted">Nama metode pembayaran yang akan ditampilkan</small>
                             </div>
 
+                            <!-- Nama Pemilik -->
                             <div class="col-md-6">
                                 <label class="form-label" for="id_nama_pemilik">
                                     Nama Pemilik
@@ -130,6 +133,7 @@
                                 <small class="text-muted">Nama pemilik rekening atau akun pembayaran (opsional)</small>
                             </div>
 
+                            <!-- Kode -->
                             <div class="col-md-6">
                                 <label class="form-label" for="id_kode">
                                     Kode <span class="text-danger">*</span>
@@ -150,6 +154,7 @@
                                 <small class="text-muted">Kode unik untuk identifikasi (huruf kapital)</small>
                             </div>
 
+                            <!-- Status Aktif -->
                             <div class="col-md-6">
                                 <label class="form-label d-block">Status</label>
                                 <div class="form-check form-switch mt-2">
@@ -161,6 +166,7 @@
                                 <small class="text-muted">Metode pembayaran yang aktif akan tampil di formulir pembayaran sewa &amp; biaya</small>
                             </div>
 
+                            <!-- Deskripsi -->
                             <div class="col-12">
                                 <label class="form-label" for="id_deskripsi">Deskripsi</label>
                                 <textarea class="form-control" id="id_deskripsi" name="deskripsi" rows="3"
@@ -168,6 +174,7 @@
                                 <small class="text-muted">Tambahkan deskripsi jika diperlukan</small>
                             </div>
 
+                            <!-- Saldo -->
                             <div class="col-md-6">
                                 <label class="form-label" for="id_saldo">
                                     Saldo Awal
@@ -187,6 +194,7 @@
                                 <small class="text-muted">Saldo awal untuk metode pembayaran ini (opsional)</small>
                             </div>
 
+                            <!-- Info Box -->
                             <div class="col-12">
                                 <div class="alert alert-primary d-flex align-items-center" role="alert">
                                     <span class="alert-icon rounded">
@@ -200,6 +208,7 @@
                             </div>
                         </div>
 
+                        <!-- Action Buttons -->
                         <div class="pt-4 d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="ri-save-line me-1"></i> Simpan
@@ -213,6 +222,7 @@
             </div>
         </div>
 
+        <!-- Help Card -->
         <div class="col-xl-4 col-lg-12 mt-4 mt-xl-0">
             <div class="card bg-primary text-white">
                 <div class="card-body">
@@ -229,6 +239,7 @@
                 </div>
             </div>
 
+            <!-- Common Payment Methods -->
             <div class="card mt-3">
                 <div class="card-body">
                     <h6 class="mb-3">Contoh Metode Pembayaran Umum</h6>
@@ -264,11 +275,12 @@
 {% block page_js %}
 <script>
     $(document).ready(function () {
-        
+        // Auto uppercase for kode field
         $('#id_kode').on('input', function () {
             this.value = this.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
         });
 
+        // Update badge status saat switch berubah
         $('#id_aktif').on('change', function () {
             const badge = $('#statusBadge');
             if (this.checked) {
@@ -278,10 +290,12 @@
             }
         });
 
+        // Inisialisasi badge status saat halaman dimuat
         if (!$('#id_aktif').is(':checked')) {
             $('#statusBadge').removeClass('bg-label-success').addClass('bg-label-secondary').text('Nonaktif');
         }
 
+        // Preview uploaded image
         $('#id_gambar').on('change', function () {
             const file = this.files[0];
             if (file) {
@@ -298,6 +312,7 @@
             }
         });
 
+        // Reset image
         $('#resetImage').on('click', function () {
             $('#id_gambar').val('');
             const container = $('#uploadedImage');
@@ -310,6 +325,7 @@
             `);
         });
 
+        // Form validation
         $('#metodePembayaranForm').on('submit', function (e) {
             const nama = $('#id_nama').val().trim();
             const kode = $('#id_kode').val().trim();

@@ -36,6 +36,7 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -102,6 +103,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Kamar</h5>
@@ -149,10 +151,24 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ total_kamar }} Kamar | Tersedia: {{ kamar_tersedia }} | Terisi: {{ kamar_terisi }}</small></div></div>
+                        </td>
+                        <td class="py-3 text-center" style="vertical-align: middle;">
+                            <span class="badge bg-label-primary" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">Rp {{ total_harga|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Total Harga</small>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
         <div class="modal-header bg-danger align-items-center py-3"><h5 class="modal-title text-white mb-0"><i class="ri-delete-bin-line me-2"></i>Konfirmasi Hapus</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body"><div class="text-center py-3"><i class="ri-error-warning-line text-danger" style="font-size: 4rem;"></i><h4 class="mt-3 mb-2">Anda yakin ingin menghapus kamar ini?</h4><p class="text-muted mb-0">Kamar: <strong id="deleteName"></strong></p><p class="text-danger small mt-2">Tindakan ini tidak dapat dibatalkan!</p></div></div>
@@ -178,21 +194,24 @@
 </style>
 <script>
 $(document).ready(function () {
-    
+    // Inisialisasi DataTable — selalu aktif tanpa guard
     {% if properti_filter %}
-$('#kamarTable').DataTable({
+    $('#kamarTable').DataTable({
         language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Sedang memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
         order: [[0, 'asc']], pageLength: 25, lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']], responsive: false,
         columnDefs: [{ orderable: false, targets: [6] }],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         initComplete: function () { $('.dataTables_filter input').attr('placeholder', 'Cari kamar...'); }
     });
+    {% endif %}
 });
-{% endif %}
+
 
 function applyFilter() { const p = new URLSearchParams(); if ($('#propertiFilter').val()) p.append('properti', $('#propertiFilter').val()); if ($('#statusFilter').val()) p.append('status', $('#statusFilter').val()); if ($('#lantaiFilter').val()) p.append('lantai', $('#lantaiFilter').val()); window.location.href = '{% url "properti:kamar_list" %}?' + p.toString(); }
 function resetFilter() { window.location.href = '{% url "properti:kamar_list" %}'; }
 
+// ── KONFIGURASI EXPORT KAMAR ──
+// Kolom: 0=NomorKamar, 1=Properti, 2=Lantai, 3=TipeKamar, 4=Harga/Bulan, 5=Status, 6=Aksi(skip)
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -207,7 +226,7 @@ var PDF_INFO = {
     email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
 };
-
+// footerData: { indeks_kolom: nilai_total } — kolom 4 = Harga/Bulan, total dari views context
 var FOOTER_DATA = { 4: {{ total_harga|floatformat:0|default:0 }} };
 var FOOTER_LABEL = 'RINGKASAN ({{ total_kamar }} Kamar | Tersedia: {{ kamar_tersedia }} | Terisi: {{ kamar_terisi }})';
 
@@ -219,12 +238,9 @@ function exportToPDF() { SimkosExport.buildPDF('#kamarTable', PDF_INFO, FOOTER_D
 
 var deleteId = null;
 function confirmDelete(id, name) { deleteId = id; $('#deleteName').text(name); $('#deleteModal .delete-error-msg').remove();
-
     new bootstrap.Modal(document.getElementById('deleteModal')).show(); }
 $('#confirmDeleteBtn').on('click', function () { if (!deleteId) return; const btn = $(this); btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menghapus...'); $.ajax({ url: '/properti/kamar/' + deleteId + '/delete/', type: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }, success: function (r) { if (r.success) { $('#deleteModal').modal('hide'); location.reload(); } else { $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + (r.message || 'Gagal menghapus data.') + '</div></div>'); } }, error: function (xhr) { var msg = 'Terjadi kesalahan pada server. Silakan coba lagi.';
-
             try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch(e) {}
-
             $('#deleteModal .modal-body').append('<div class="delete-error-msg alert alert-danger d-flex align-items-start mt-3 mb-0" role="alert"><i class="ri-error-warning-line me-2 fs-5"></i><div>' + msg + '</div></div>'); }, complete: function () { btn.prop('disabled', false); deleteId = null; } }); });
 </script>
 {% endblock page_js %}

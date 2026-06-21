@@ -1,29 +1,5 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static humanize %}
-
-{% comment %}
-  ==========================================================================
-  LAPORAN - Hunian
-  ==========================================================================
-  Halaman laporan hunian dengan filter tanggal dan export.
-  Laporan menggunakan DataTables untuk tabel interaktif dan
-  ApexCharts untuk visualisasi grafik.
-
-  FLOW DATA:
-  - URL: /laporan/hunian/- View: Filter data berdasarkan tanggal + agregasi- Template: Tabel + grafik + tombol export- Export: PDF via pdfmake, Excel via SimkosExport
-
-  RELASI KE MODUL LAIN:
-  - apps/laporan/views.py -> View laporan- Semua model sumber data (produk, penjualan, pembelian, dll)- DataTables + ApexCharts -> Visualisasi
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Filter, kolom tabel, jenis chart- BOLEH ditambah: Metrik baru (sesuaikan query di views.py)- JANGAN diubah: Format export (break SimkosExport)
-
-  TIPS & DEBUGGING:
-  - Laporan kosong? Cek filter tanggal di views.py- Export gagal? Cek apakah tabel punya data (bukan kosong)
-
-  ==========================================================================
-{% endcomment %}
-
 {% block title %}Laporan Hunian - SIMKOS{% endblock title %}
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -32,7 +8,7 @@
 {% block vendor_js %}{{ block.super }}
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
-<script src="{% static 'vendor/libs/chartjs/chartjs.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="{% static 'js/simkos_export.js' %}"></script>
@@ -43,6 +19,7 @@
         <div><h4 class="mb-1"><i class="ri-door-open-line me-2"></i>Laporan Hunian</h4><p class="text-muted mb-0">Statistik tingkat hunian semua properti</p></div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -59,7 +36,7 @@
                     </select>
                 </div>
             </div>
-            
+            <!-- Baris 2: Pilih Kolom dan Tombol Filter -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -97,6 +74,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row mb-4 g-3">
         <div class="col-6 col-lg-3">
             <div class="card h-100">
@@ -140,21 +118,13 @@
         </div>
     </div>
 
+    <!-- Chart Row -->
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between pb-1">
-                    <div class="me-2">
-                        <h5 class="mb-0"><i class="ri-pie-chart-2-line me-2 text-primary"></i>Distribusi Kamar</h5>
-                        <small class="text-muted">Status seluruh kamar</small>
-                    </div>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__hunianDonutChart) window.__hunianDonutChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
+                <div class="card-header pb-1">
+                    <h5 class="mb-0"><i class="ri-pie-chart-2-line me-2 text-primary"></i>Distribusi Kamar</h5>
+                    <small class="text-muted">Status seluruh kamar</small>
                 </div>
                 <div class="card-body pt-2 d-flex flex-column justify-content-center">
                     <div id="hunianDonutChart" style="min-height: 280px;"></div>
@@ -163,18 +133,9 @@
         </div>
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between pb-1">
-                    <div class="me-2">
-                        <h5 class="mb-0"><i class="ri-bar-chart-horizontal-line me-2 text-info"></i>Hunian per Properti</h5>
-                        <small class="text-muted">Tingkat hunian masing-masing properti</small>
-                    </div>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__hunianBarChart){var c=window.__hunianBarChart.canvas;c.toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='grafik-hunian.png';a.click();});}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
+                <div class="card-header pb-1">
+                    <h5 class="mb-0"><i class="ri-bar-chart-horizontal-line me-2 text-info"></i>Hunian per Properti</h5>
+                    <small class="text-muted">Tingkat hunian masing-masing properti</small>
                 </div>
                 <div class="card-body pt-2">
                     <div style="position:relative;height:280px"><canvas id="hunianBarCanvas"></canvas></div>
@@ -183,6 +144,7 @@
         </div>
     </div>
 
+    <!-- Detail Table Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="ri-list-check-2 me-2"></i>Detail Hunian per Properti</h5>
@@ -211,6 +173,17 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="2" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i><div class="text-start"><strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong><small class="text-muted" style="font-size: 0.75rem;">{{ data_properti|length }} Properti</small></div></div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-primary d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_kamar }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Total</small></div></td>
+                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-warning d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_terisi }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Terisi</small></div></td>
+                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-success d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ total_tersedia }}</span></span><small class="text-muted" style="font-size: 0.7rem;">Tersedia</small></div></td>
+                        <td class="py-3" style="vertical-align: middle;"><div class="d-flex flex-column align-items-center"><span class="badge bg-label-info d-flex align-items-center gap-1 mb-1" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"><span>{{ tingkat_hunian }}%</span></span><small class="text-muted" style="font-size: 0.7rem;">Rata-rata</small></div></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -220,12 +193,15 @@
 <script>
 var dataTable;
 $(document).ready(function(){
+    {% if data_properti %}
     dataTable = $('#dataTable').DataTable({
         language:{sSearch:"Cari:",sLengthMenu:"Tampilkan _MENU_ data",sInfo:"Menampilkan _START_ sampai _END_ dari _TOTAL_ data",sInfoEmpty:"Menampilkan 0 sampai 0 dari 0 data",sZeroRecords:"Tidak ditemukan",oPaginate:{sNext:"Selanjutnya",sPrevious:"Sebelumnya"}},
         pageLength:25,ordering:true,responsive:false,
-        dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+        dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
     });
+    {% endif %}
 
+    // === Donut Chart: Distribusi Kamar ===
     if (typeof ApexCharts !== 'undefined') {
         var isDarkDonut = document.documentElement.classList.contains('dark-style') ||
                      document.body.classList.contains('dark-style') ||
@@ -240,22 +216,16 @@ $(document).ready(function(){
         var labelColor = isDarkDonut ? 'rgba(255,255,255,0.6)' : '#6e6b7b';
         var gridColor = isDarkDonut ? 'rgba(255,255,255,0.1)' : '#ebe9f1';
 
-        // Pattern B: Donut placeholder when data is empty
-        var hunTerisi = {{ total_terisi|default:0 }};
-        var hunTersedia = {{ total_tersedia|default:0 }};
-        var hunTotal = hunTerisi + hunTersedia;
-
-        var hunianDonutChart = new ApexCharts(document.querySelector("#hunianDonutChart"), {
-            series: hunTotal > 0 ? [hunTerisi, hunTersedia] : [1],
+        new ApexCharts(document.querySelector("#hunianDonutChart"), {
+            series: [{{ total_terisi }}, {{ total_tersedia }}],
             chart: {
                 type: 'donut',
                 height: 280,
                 fontFamily: '"Inter", sans-serif',
-                parentHeightOffset: 0,
-                toolbar: { show: false }
+                parentHeightOffset: 0
             },
-            labels: hunTotal > 0 ? ['Terisi', 'Tersedia'] : ['Belum Ada Data'],
-            colors: hunTotal > 0 ? [primaryColor, successColor] : ['#e9ecef'],
+            labels: ['Terisi', 'Tersedia'],
+            colors: [primaryColor, successColor],
             plotOptions: {
                 pie: {
                     endAngle: 130,
@@ -312,20 +282,11 @@ $(document).ready(function(){
                 labels: { colors: labelColor }
             },
             responsive: [{ breakpoint: 480, options: { chart: { height: 240 } } }]
-        });
-        hunianDonutChart.render();
-        window.__hunianDonutChart = hunianDonutChart;
+        }).render();
 
-        var propNames = {{ prop_names|safe }};
-        var propHunian = {{ prop_hunian|safe }};
-
-        // Approach B: Always render chart, use zero-filled data when empty
-        if (!propNames || !Array.isArray(propNames) || propNames.length === 0) {
-            propNames = ['Properti A', 'Properti B', 'Properti C'];
-        }
-        if (!propHunian || !Array.isArray(propHunian) || propHunian.length === 0) {
-            propHunian = Array(propNames.length).fill(0);
-        }
+        // === Bar Chart: Hunian per Properti (Chart.js - Identik dengan Tren Pendapatan AI Dashboard) ===
+        var propNames = [{% for d in data_properti %}'{{ d.properti.nama|truncatechars:15 }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        var propHunian = [{% for d in data_properti %}{{ d.tingkat_hunian }}{% if not forloop.last %},{% endif %}{% endfor %}];
         var isDark = document.documentElement.classList.contains('dark-style') ||
                      document.body.classList.contains('dark-style') ||
                      window.getComputedStyle(document.body).backgroundColor.includes('rgb(35') ||
@@ -335,7 +296,7 @@ $(document).ready(function(){
 
         var barEl = document.getElementById('hunianBarCanvas');
         if (barEl) {
-            var hunianBarChart = new Chart(barEl.getContext('2d'), {
+            new Chart(barEl.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: propNames,
@@ -386,7 +347,6 @@ $(document).ready(function(){
                     }
                 }
             });
-            window.__hunianBarChart = hunianBarChart;
         }
     }
 });
@@ -418,6 +378,9 @@ function resetFilter() {
     dataTable.search('').columns().search('').draw();
 }
 
+// Konfigurasi Export Laporan Hunian
+// Kolom: 0=Properti, 1=Tipe, 2=Total Kamar, 3=Terisi, 4=Tersedia, 5=Tingkat Hunian
+// Kolom 2,3,4 bukan nominal tapi angka total — tampilkan di FOOTER_DATA agar berada di kolom yang tepat
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -434,7 +397,7 @@ var PDF_INFO = {
 };
 var FOOTER_DATA  = { 2: '{{ total_kamar }}', 3: '{{ total_terisi }}', 4: '{{ total_tersedia }}', 5: '{{ tingkat_hunian }}%' };
 var FOOTER_LABEL = 'RINGKASAN ({{ data_properti|length }} Properti)';
-
+// moneyColumns = [] → tidak ada kolom uang di tabel hunian, semua angka biasa
 var MONEY_COLS   = [];
 function exportExcel() { SimkosExport.buildExcel('#dataTable', EXCEL_INFO, FOOTER_DATA, FOOTER_LABEL, 'LAPORAN HUNIAN', 'Laporan_Hunian', MONEY_COLS); }
 function exportPDF()   { SimkosExport.buildPDF('#dataTable',   PDF_INFO,   FOOTER_DATA, FOOTER_LABEL, 'LAPORAN HUNIAN', 'Laporan_Hunian', MONEY_COLS); }

@@ -1,29 +1,5 @@
 {% extends 'layout/layout_vertical.html' %}
 {% load static humanize %}
-
-{% comment %}
-  ==========================================================================
-  LAPORAN - Keuangan
-  ==========================================================================
-  Halaman laporan keuangan dengan filter tanggal dan export.
-  Laporan menggunakan DataTables untuk tabel interaktif dan
-  ApexCharts untuk visualisasi grafik.
-
-  FLOW DATA:
-  - URL: /laporan/keuangan/- View: Filter data berdasarkan tanggal + agregasi- Template: Tabel + grafik + tombol export- Export: PDF via pdfmake, Excel via SimkosExport
-
-  RELASI KE MODUL LAIN:
-  - apps/laporan/views.py -> View laporan- Semua model sumber data (produk, penjualan, pembelian, dll)- DataTables + ApexCharts -> Visualisasi
-
-  BAGIAN YANG BOLEH/TIDAK BOLEH DIUBAH:
-  - BOLEH diubah: Filter, kolom tabel, jenis chart- BOLEH ditambah: Metrik baru (sesuaikan query di views.py)- JANGAN diubah: Format export (break SimkosExport)
-
-  TIPS & DEBUGGING:
-  - Laporan kosong? Cek filter tanggal di views.py- Export gagal? Cek apakah tabel punya data (bukan kosong)
-
-  ==========================================================================
-{% endcomment %}
-
 {% block title %}Laporan Keuangan - SIMKOS{% endblock title %}
 {% block vendor_css %}{{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
@@ -36,7 +12,7 @@
 <script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 <script src="{% static 'vendor/libs/flatpickr/flatpickr.js' %}"></script>
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
-<script src="{% static 'vendor/libs/chartjs/chartjs.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <script src="{% static 'js/simkos_export.js' %}"></script>
@@ -48,6 +24,7 @@
         <div><h4 class="mb-1"><i class="ri-file-chart-line me-2"></i>Laporan Keuangan</h4><p class="text-muted mb-0">Ringkasan pemasukan, pengeluaran & laba bersih</p></div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <form method="get">
@@ -93,6 +70,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row mb-4 g-3">
         <div class="col-6 col-lg-3">
             <div class="card h-100">
@@ -155,20 +133,12 @@
         </div>
     </div>
 
+    <!-- Chart Pemasukan vs Pengeluaran -->
     <div class="row g-3 mb-4">
         <div class="col-md-8">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between pb-1">
-                    <div class="me-2">
-                        <h5 class="mb-0"><i class="ri-bar-chart-grouped-line me-2 text-primary"></i>Perbandingan Pemasukan & Pengeluaran</h5>
-                    </div>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__keuanganBarChart){var c=window.__keuanganBarChart.canvas;c.toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='grafik-keuangan.png';a.click();});}"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
+                <div class="card-header pb-1">
+                    <h5 class="mb-0"><i class="ri-bar-chart-grouped-line me-2 text-primary"></i>Perbandingan Pemasukan & Pengeluaran</h5>
                 </div>
                 <div class="card-body pt-2">
                     <div style="position:relative;height:300px"><canvas id="keuanganBarCanvas"></canvas></div>
@@ -177,17 +147,8 @@
         </div>
         <div class="col-md-4">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between pb-1">
-                    <div class="me-2">
-                        <h5 class="mb-0"><i class="ri-pie-chart-2-line me-2 text-info"></i>Komposisi</h5>
-                    </div>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown"><i class="ri-more-2-line ri-20px"></i></button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();"><i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__keuanganPieChart) window.__keuanganPieChart.exportTo({type:'png'});"><i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
+                <div class="card-header pb-1">
+                    <h5 class="mb-0"><i class="ri-pie-chart-2-line me-2 text-info"></i>Komposisi</h5>
                 </div>
                 <div class="card-body pt-2 d-flex flex-column justify-content-center">
                     <div id="keuanganPieChart" style="min-height: 280px;"></div>
@@ -196,6 +157,7 @@
         </div>
     </div>
 
+    <!-- Detail Pemasukan -->
     {% if jenis_filter != 'pengeluaran' %}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -221,11 +183,18 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.2rem;"></i><strong>RINGKASAN</strong><small class="text-muted ms-2">{{ total_trx_masuk }} Transaksi</small></div></td>
+                        <td class="text-end py-3"><span class="badge bg-label-success" style="font-size:0.9rem;padding:0.4rem 0.7rem;">Rp {{ total_pemasukan|floatformat:0|intcomma }}</span></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
     {% endif %}
 
+    <!-- Detail Pengeluaran -->
     {% if jenis_filter != 'pemasukan' %}
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -250,6 +219,12 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3"><div class="d-flex align-items-center"><i class="ri-calculator-line me-2 text-primary" style="font-size:1.2rem;"></i><strong>RINGKASAN</strong><small class="text-muted ms-2">{{ total_trx_keluar }} Transaksi</small></div></td>
+                        <td class="text-end py-3"><span class="badge bg-label-danger" style="font-size:0.9rem;padding:0.4rem 0.7rem;">Rp {{ total_pengeluaran|floatformat:0|intcomma }}</span></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -281,13 +256,15 @@ var DT_LANG = {
     "sSearch": "Cari:",
     "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" }
 };
-var DT_DOM = '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>';
+var DT_DOM = '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>';
 
 $(document).ready(function() {
     flatpickr('#startDate', { dateFormat: 'Y-m-d' });
     flatpickr('#endDate', { dateFormat: 'Y-m-d' });
 
+    // DataTables: Rincian Pemasukan
     if ($('#tblPemasukan').length) {
+        {% if pemasukan_list %}
         $('#tblPemasukan').DataTable({
             language: DT_LANG,
             order: [[0, 'desc']],
@@ -297,9 +274,12 @@ $(document).ready(function() {
             dom: DT_DOM,
             initComplete: function () { $('#tblPemasukan_wrapper .dataTables_filter input').attr('placeholder', 'Cari pemasukan...'); }
         });
+        {% endif %}
     }
 
+    // DataTables: Rincian Pengeluaran
     if ($('#tblPengeluaran').length) {
+        {% if pemasukan_list %}
         $('#tblPengeluaran').DataTable({
             language: DT_LANG,
             order: [[0, 'desc']],
@@ -309,8 +289,10 @@ $(document).ready(function() {
             dom: DT_DOM,
             initComplete: function () { $('#tblPengeluaran_wrapper .dataTables_filter input').attr('placeholder', 'Cari pengeluaran...'); }
         });
+        {% endif %}
     }
 
+    // === Bar Chart: Pemasukan vs Pengeluaran ===
     var pemasukan = {{ total_pemasukan|floatformat:0|default:"0" }};
     var pengeluaran = {{ total_pengeluaran|floatformat:0|default:"0" }};
     var laba = {{ laba_bersih|floatformat:0|default:"0" }};
@@ -327,6 +309,7 @@ $(document).ready(function() {
         var labelColor = isDarkDonut ? 'rgba(255,255,255,0.6)' : '#6e6b7b';
         var gridColor = isDarkDonut ? 'rgba(255,255,255,0.1)' : '#ebe9f1';
 
+        // === Bar Chart: Pemasukan vs Pengeluaran (Chart.js - Identik dengan Tren Pendapatan AI Dashboard) ===
         var isDark = document.documentElement.classList.contains('dark-style') ||
                      document.body.classList.contains('dark-style') ||
                      window.getComputedStyle(document.body).backgroundColor.includes('rgb(35') ||
@@ -336,7 +319,7 @@ $(document).ready(function() {
 
         var barEl = document.getElementById('keuanganBarCanvas');
         if (barEl) {
-            var keuanganBarChart = new Chart(barEl.getContext('2d'), {
+            new Chart(barEl.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: ['Pemasukan', 'Pengeluaran', 'Laba Bersih'],
@@ -388,22 +371,19 @@ $(document).ready(function() {
                     }
                 }
             });
-            window.__keuanganBarChart = keuanganBarChart;
         }
 
-        // Pattern B: Donut placeholder when data is empty
-        var keuanganTotal = pemasukan + pengeluaran;
-        var keuanganPieChart = new ApexCharts(document.querySelector("#keuanganPieChart"), {
-            series: keuanganTotal > 0 ? [pemasukan, pengeluaran] : [1],
+        // === Donut Chart: Komposisi (Materialize Style) ===
+        new ApexCharts(document.querySelector("#keuanganPieChart"), {
+            series: [pemasukan, pengeluaran],
             chart: {
                 type: 'donut',
                 height: 280,
                 fontFamily: '"Inter", sans-serif',
-                parentHeightOffset: 0,
-                toolbar: { show: false }
+                parentHeightOffset: 0
             },
-            labels: keuanganTotal > 0 ? ['Pemasukan', 'Pengeluaran'] : ['Belum Ada Data'],
-            colors: keuanganTotal > 0 ? [successColor, dangerColor] : ['#e9ecef'],
+            labels: ['Pemasukan', 'Pengeluaran'],
+            colors: [successColor, dangerColor],
             plotOptions: {
                 pie: {
                     endAngle: 130,
@@ -460,12 +440,13 @@ $(document).ready(function() {
                 labels: { colors: labelColor }
             },
             responsive: [{ breakpoint: 480, options: { chart: { height: 240 } } }]
-        });
-        keuanganPieChart.render();
-        window.__keuanganPieChart = keuanganPieChart;
+        }).render();
     }
 });
 
+// === KONFIGURASI EXPORT LAPORAN KEUANGAN ===
+// Tabel Pemasukan: 0=Tanggal, 1=No.Pembayaran, 2=Penyewa, 3=Metode, 4=Jumlah
+// Tabel Pengeluaran: 0=Tanggal, 1=Keterangan, 2=Kategori, 3=Jumlah
 var EXCEL_INFO = {
     name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
     address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -481,10 +462,16 @@ var PDF_INFO = {
     copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
 };
 
+/**
+ * Export tabel HTML biasa (non-DataTables) ke Excel / PDF menggunakan SimkosExport.
+ * Karena tblPemasukan/tblPengeluaran bukan DataTables, kita baca langsung dari DOM
+ * tapi tetap menggunakan algoritmik ringkasan SimkosExport.
+ */
 function exportTableExcel(tableId, filename, footerData, footerLabel, docTitle) {
     var t = document.getElementById(tableId);
-    if (!t) { showExportError(); return; }
+    if (!t) { alert('Tabel tidak ditemukan!'); return; }
 
+    // Bangun daftar kolom visible dari thead
     var visibleCols = [];
     t.querySelectorAll('thead tr th').forEach(function(th, idx) {
         if (th.style.display !== 'none' && th.offsetParent !== null) {
@@ -499,15 +486,17 @@ function exportTableExcel(tableId, filename, footerData, footerLabel, docTitle) 
         + ' xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8">';
     html += '<style>table{border-collapse:collapse;table-layout:fixed;width:100%;}th,td{font-family:Arial,sans-serif;font-size:9pt;white-space:normal;word-wrap:break-word;overflow:hidden;}</style></head><body>';
 
+    // Kop surat
     html += '<table border="0" style="margin-bottom:8px;">';
     html += '<tr><td colspan="' + colCount + '" style="text-align:center;font-size:14pt;font-weight:bold;color:#5F61E6;border:none;">' + (EXCEL_INFO.name || 'SIMKOS') + '</td></tr>';
     html += '<tr><td colspan="' + colCount + '" style="text-align:center;font-size:9pt;color:#697A8D;border:none;">' + (EXCEL_INFO.address || '') + '</td></tr>';
     html += '<tr><td colspan="' + colCount + '" style="text-align:center;font-size:9pt;color:#697A8D;border:none;">Telp: ' + (EXCEL_INFO.phone || '-') + ' | Email: ' + (EXCEL_INFO.email || '-') + '</td></tr>';
     html += '<tr><td colspan="' + colCount + '" style="border:none;">&nbsp;</td></tr>';
     html += '</table>';
-    
+    // Judul
     html += '<table border="0" style="margin-bottom:6px;"><tr><td colspan="' + colCount + '" style="font-size:11pt;font-weight:bold;color:#5F61E6;border:none;">' + (docTitle || filename) + '</td></tr></table>';
 
+    // Tabel data
     html += '<table border="1" cellpadding="4" style="border-collapse:collapse;">';
     html += '<thead><tr>';
     visibleCols.forEach(function(col) {
@@ -515,6 +504,7 @@ function exportTableExcel(tableId, filename, footerData, footerLabel, docTitle) 
     });
     html += '</tr></thead><tbody>';
 
+    // Baris data dari tbody
     t.querySelectorAll('tbody tr').forEach(function(tr) {
         var cells = tr.querySelectorAll('td');
         if (!cells.length || (cells.length === 1 && cells[0].colSpan > 1)) return;
@@ -527,8 +517,9 @@ function exportTableExcel(tableId, filename, footerData, footerLabel, docTitle) 
         html += '</tr>';
     });
 
+    // Baris ringkasan: gunakan footerData agar total di kolom yang tepat
     var hasFooter = footerData && Object.keys(footerData).length > 0;
-    
+    // Build summary cells manually sesuai pola SimkosExport
     var labelPlaced = false;
     html += '<tr style="background-color:#EEF0FF;font-weight:bold;">';
     visibleCols.forEach(function(col, ri) {
@@ -563,7 +554,7 @@ function exportTableExcel(tableId, filename, footerData, footerLabel, docTitle) 
 function exportTablePDF(tableId, title, footerData, footerLabel) {
     if (typeof pdfMake === 'undefined') { alert('pdfMake belum dimuat!'); return; }
     var t = document.getElementById(tableId);
-    if (!t) { showExportError(); return; }
+    if (!t) { alert('Tabel tidak ditemukan!'); return; }
 
     var visibleCols = [];
     t.querySelectorAll('thead tr th').forEach(function(th, idx) {
@@ -591,6 +582,7 @@ function exportTablePDF(tableId, title, footerData, footerLabel) {
         body.push(row);
     });
 
+    // Baris ringkasan
     var hasFooter = footerData && Object.keys(footerData).length > 0;
     var summaryRow = [];
     var labelPlaced = false;
@@ -609,7 +601,7 @@ function exportTablePDF(tableId, title, footerData, footerLabel) {
     if (summaryRow.length > 0) body.push(summaryRow);
 
     var bodyLen = body.length;
-    
+    // Gunakan 'auto' agar pdfMake menghitung lebar kolom otomatis sesuai konten
     var colWidths = Array(visibleCols.length).fill('auto');
 
     pdfMake.createPdf({
@@ -653,6 +645,7 @@ function exportTablePDF(tableId, title, footerData, footerLabel) {
     }).download((title || filename).replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf');
 }
 
+// Toggle kolom pemasukan (CSS visibility)
 function togglePemasukanCols() {
     var tbl = document.getElementById('tblPemasukan');
     if (!tbl) return;
@@ -664,7 +657,7 @@ function togglePemasukanCols() {
         });
     });
 }
-
+// Toggle kolom pengeluaran (CSS visibility)
 function togglePengeluaranCols() {
     var tbl = document.getElementById('tblPengeluaran');
     if (!tbl) return;
@@ -678,39 +671,3 @@ function togglePengeluaranCols() {
 }
 </script>
 {% endblock page_js %}
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>

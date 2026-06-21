@@ -33,6 +33,7 @@
         </div>
     </div>
 
+    <!-- Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-lg-3 col-sm-6">
             <div class="card">
@@ -104,6 +105,7 @@
         </div>
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -254,9 +256,35 @@
                                 class="ri-stack-line ri-3x text-muted mb-3 d-block"></i>
                             <p class="text-muted mb-0">Belum ada data stok</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_produk }} Produk | {{ total_gudang }} Gudang</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3" style="vertical-align: middle;">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="badge bg-label-info d-flex align-items-center gap-1 mb-2"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem; min-width: 100px;">
+                                    <i class="ri-stack-line"></i>
+                                    <span>{{ total_stok|floatformat:0 }}</span>
+                                </span>
+                                <small class="text-muted fw-medium" style="font-size: 0.75rem;">Total Stok</small>
+                            </div>
+                        </td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                        <td class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -332,21 +360,25 @@
 <script>
     $(document).ready(function () {
         {% if stok_list %}
+        {% if gudang_list %}
         $('#stokTable').DataTable({
             language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Proses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "0 data", "sInfoFiltered": "(disaring dari _MAX_ total)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
         });
+        {% endif %}
         {% endif %}
     });
 
+
     function exportToExcel() {
         const table = document.getElementById('stokTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
+        // Buat tabel HTML untuk Excel (format .xls)
         let html = '<table border="1">';
         html += '<thead><tr style="background-color: #696CFF; color: #FFFFFF; font-weight: bold;">';
 
@@ -376,6 +408,7 @@
             });
         }
 
+        // Tambah baris RINGKASAN dari tfoot
         const totalProduk = '{{ total_produk }}';
         const totalGudang = '{{ total_gudang }}';
         const totalStok = '{{ total_stok|floatformat:0 }}';
@@ -393,6 +426,7 @@
         link.click();
     }
 
+    // Company Information (from Template Cetak settings)
     const COMPANY_INFO = {
         name: "{{ export_pdf_template.header_nama_perusahaan }}",
         address: "{{ export_pdf_template.header_alamat }}",
@@ -406,13 +440,13 @@
         if (typeof pdfMake === 'undefined') { alert('pdfMake library tidak tersedia!'); return; }
 
         const table = document.getElementById('stokTable');
-        if (!table) { showExportError(); return; }
+        if (!table) { alert('Tabel tidak ditemukan!'); return; }
 
         const headerRow = table.querySelector('thead tr');
         const headers = [];
         if (headerRow) {
             headerRow.querySelectorAll('th').forEach((th, index) => {
-                
+                // Only export visible columns (exclude Last/Aksi)
                 if (index < headerRow.querySelectorAll('th').length - 1 && th.style.display !== 'none') {
                     headers.push({
                         text: th.textContent.trim(),
@@ -434,7 +468,7 @@
 
                 const row = [];
                 cells.forEach((td, index) => {
-                    
+                    // Only export visible columns (exclude Last/Aksi)
                     if (index < cells.length - 1 && td.style.display !== 'none') {
                         let text = td.textContent.trim().replace(/\s+/g, ' ');
                         row.push(text);
@@ -444,17 +478,19 @@
             });
         }
 
+        // Tambah baris RINGKASAN — Ekstrak dinamis dari tfoot
         const tfoot = table.querySelector('tfoot');
         if (tfoot) {
-            
+            // Extract from tfoot small tag: "19 Produk | 2 Gudang"
             const smallText = tfoot.querySelector('small.text-muted')?.textContent.trim() || '';
-            
+            // Extract total stok from badge
             const totalStok = tfoot.querySelector('.badge span')?.textContent.trim() || '0';
 
+            // Bangun baris ringkasan dengan colspan yang sesuai jumlah header
             const summaryRow = [
                 { text: `RINGKASAN: ${smallText}, Total Stok: ${totalStok}`, colSpan: headers.length, bold: true, fillColor: '#f8f9fa', alignment: 'left' }
             ];
-            
+            // Tambah sel kosong untuk colspan
             for (let i = 1; i < headers.length; i++) { summaryRow.push({}); }
             body.push(summaryRow);
         }
@@ -523,39 +559,3 @@
     function resetFilter() { document.getElementById('searchProduk').value = '', document.getElementById('gudangFilter').value = '', document.getElementById('stokFilter').value = '', $('#stokTable').DataTable().search('').draw() }
 </script>
 {% endblock page_js %}
-
-<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning align-items-center py-3">
-                <h5 class="modal-title text-dark mb-0">
-                    <i class="ri-error-warning-line me-2"></i>Export Gagal
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-3">
-                    <i class="ri-file-warning-line text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3 mb-2">Tabel Tidak Ditemukan</h4>
-                    <p class="text-muted mb-0">Tidak ada data tabel yang dapat di-export. Pastikan tabel sudah dimuat dengan benar sebelum melakukan export.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function showExportError() {
-    var modal = document.getElementById('exportErrorModal');
-    if (modal) {
-        new bootstrap.Modal(modal).show();
-    } else {
-        alert('Tabel tidak ditemukan!');
-    }
-}
-</script>

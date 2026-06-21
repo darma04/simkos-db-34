@@ -25,7 +25,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -43,6 +43,7 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
             <div class="row g-3">
@@ -137,6 +138,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Data Jabatan</h5>
@@ -226,13 +228,34 @@
                             </div>
                             <p class="text-muted mb-0 d-block">Belum ada data jabatan</p>
                         </td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="4" class="text-start ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <span class="d-inline-flex align-items-center justify-content-center bg-label-warning rounded-circle me-2" style="width: 40px; height: 40px;">
+                                    <i class="ri-calculator-line" style="font-size: 1.25rem;"></i>
+                                </span>
+                                <div>
+                                    <strong>RINGKASAN</strong>
+                                    <br><small class="text-muted">Total {{ total_jabatan|default:0 }} Jabatan</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-center">
+                            <strong class="text-success">Rp {{ total_gaji|floatformat:0|default:0 }}</strong>
+                            <br><small class="text-muted">Total Gaji Pokok</small>
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -275,6 +298,7 @@ let dataTable;
 
 $(document).ready(function() {
     {% if jabatan_list %}
+    {% if departemen_list %}
     dataTable = $('#jabatanTable').DataTable({
         language: {
             "sEmptyTable": "Tidak ada data", "sLengthMenu": "Tampilkan _MENU_ data",
@@ -286,8 +310,9 @@ $(document).ready(function() {
         lengthMenu: [[10, 25, 50, -1], ['10', '25', '50', 'Semua']],
         responsive: false,
         columnDefs: [{ orderable: false, targets: [6] }],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
     });
+    {% endif %}
     {% endif %}
 });
 
@@ -393,7 +418,6 @@ function confirmDelete(id, name) {
     deleteId = id;
     $('#deleteName').text(name);
     $('#deleteModal .delete-error-msg').remove();
-
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 

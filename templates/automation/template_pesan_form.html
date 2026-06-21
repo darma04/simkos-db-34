@@ -21,7 +21,7 @@
             <div class="card mb-4">
                 <h5 class="card-header">Edit Template Pesan</h5>
                 <div class="card-body">
-                    
+                    <!-- UI Gating: Read-Only Alert -->
                     {% if not can_edit.automation.template_pesan %}
                     <div class="alert alert-warning alert-dismissible mb-4" role="alert">
                         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -30,7 +30,6 @@
                     </div>
                     {% endif %}
 
-                    
                     <form method="post">
                         {% csrf_token %}
 
@@ -66,6 +65,7 @@
             </div>
         </div>
 
+        <!-- Variabel yang Tersedia -->
         <div class="col-lg-4 mb-4">
             <div class="card mb-4">
                 <h5 class="card-header">Variabel Tersedia</h5>
@@ -101,6 +101,7 @@
     </div>
 </div>
 
+    <!-- Auto-Injected UI Disabler Script -->
     {% if not can_edit.automation.template_pesan %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {

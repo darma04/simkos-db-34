@@ -23,10 +23,10 @@
 
     <div class="card">
         <div class="card-body">
-            
             <form method="post">
                 {% csrf_token %}
                 
+    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.hr.departemen %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>

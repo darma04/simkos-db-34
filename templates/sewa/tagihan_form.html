@@ -15,6 +15,8 @@
         <span class="text-muted fw-light">Sewa / Tagihan /</span> {{ title|default:"Buat Tagihan" }}
     </h4>
 
+    
+    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.sewa.tagihan %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -44,7 +46,6 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    
                     <form method="post">
                         {% csrf_token %}
 
@@ -65,6 +66,7 @@
                         </div>
                         {% endif %}
 
+                        <!-- Section: Informasi Kontrak -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-file-text-line me-1"></i>Informasi Kontrak
                         </h6>
@@ -79,6 +81,7 @@
 
                         <hr class="my-4">
 
+                        <!-- Section: Detail Tagihan -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-calendar-line me-1"></i>Detail Tagihan
                         </h6>
@@ -122,6 +125,7 @@
 
                         <hr class="my-4">
 
+                        <!-- Section: Informasi Pembayaran -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-money-dollar-circle-line me-1"></i>Informasi Pembayaran
                         </h6>
@@ -148,6 +152,7 @@
 
                         <hr class="my-4">
 
+                        <!-- Section: Catatan -->
                         <h6 class="fw-semibold text-primary mb-3">
                             <i class="ri-sticky-note-line me-1"></i>Catatan
                         </h6>
@@ -171,6 +176,7 @@
             </div>
         </div>
 
+        <!-- Sidebar Info -->
         <div class="col-xl-4">
             <div class="card mb-4">
                 <div class="card-body">

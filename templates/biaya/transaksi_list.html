@@ -7,8 +7,7 @@
    Fitur: filter, export Excel & PDF, delete modal.
    ==========================================================================
 {% endcomment %}
-{% load static %}
-{% load currency_filters %}
+{% load static %}`r`n{% load currency_filters %}
 
 {% block title %}Transaksi Biaya - Keuangan SIMKOS{% endblock title %}
 
@@ -31,7 +30,7 @@
 
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-    
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">
@@ -46,9 +45,10 @@
         {% endif %}
     </div>
 
+    <!-- Filter Card -->
     <div class="card mb-4">
         <div class="card-body">
-            
+            <!-- Baris 1: Filter Inputs -->
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Tanggal Mulai</label>
@@ -69,6 +69,7 @@
                 </div>
             </div>
 
+            <!-- Baris 2: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
             <div class="row g-3 mt-2 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label">Pilih Kolom</label>
@@ -149,6 +150,7 @@
         </div>
     </div>
 
+    <!-- Main Card -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Riwayat Pengeluaran</h5>
@@ -260,10 +262,29 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-footer-summary">
+                    <tr>
+                        <td colspan="3" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                            <div class="d-flex align-items-center justify-content-start">
+                                <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ total_transaksi_biaya }} Transaksi Biaya</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 text-center" style="vertical-align: middle;">
+                            <span class="badge bg-label-danger" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">Rp {{ total_amount_biaya|floatformat:0|default:"0" }}</span>
+                            <br><small class="text-muted">Total Biaya</small>
+                        </td>
+                        <td colspan="5" class="py-3"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteTransaksiModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -298,7 +319,7 @@
 
 {% block page_js %}
 <style>
-    
+    /* DataTables Custom Styling */
     .dataTables_wrapper .dataTables_info {
         padding: 1rem 1.5rem;
         font-size: 0.875rem;
@@ -363,6 +384,7 @@
         letter-spacing: 0;
     }
 
+    /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -370,11 +392,11 @@
             max-width: 100%;
         }
 
-        {% if kategori_list %}.datatables-biaya {
+        .datatables-biaya {
             min-width: 950px !important;
             width: 950px !important;
             table-layout: auto !important;
-        }{% endif %}
+        }
 
         .dataTables_wrapper {
             overflow-x: hidden !important;
@@ -388,8 +410,9 @@
         flatpickr('#startDate', { dateFormat: 'Y-m-d' });
         flatpickr('#endDate', { dateFormat: 'Y-m-d' });
 
-        const table = {% if kategori_list %}
-$('#biayaTable').DataTable({
+        // Inisialisasi DataTable
+        {% if kategori_list %}
+        const table = $('#biayaTable').DataTable({
             language: {
                 "sEmptyTable": "Tidak ada data yang tersedia pada tabel ini",
                 "sProcessing": "Sedang memproses...",
@@ -408,20 +431,20 @@ $('#biayaTable').DataTable({
                     "sLast": "Terakhir"
                 }
             },
-            order: [[1, 'desc']], 
+            order: [[1, 'desc']], // Sort by tanggal desc
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [
-                { orderable: false, targets: [8] } 
+                { orderable: false, targets: [8] } // Kolom Aksi di index 8
             ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () {
                 $('.dataTables_filter input').attr('placeholder', 'Cari transaksi biaya...');
             }
         });
+        {% endif %}
     });
-{% endif %}
 
     function applyFilter() {
         const params = new URLSearchParams();
@@ -435,6 +458,7 @@ $('#biayaTable').DataTable({
         window.location.href = '{% url "biaya:transaksi" %}';
     }
 
+    // ── Konfigurasi Export (dari Template Cetak pengaturan) ──
     const EXCEL_INFO = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -449,15 +473,18 @@ $('#biayaTable').DataTable({
         email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
     };
-    
+    // Kolom: 0=No.Trx, 1=Tanggal, 2=Kategori, 3=Jumlah, 4=Status, 5=Metode, 6=Deskripsi, 7=DicatatOleh, 8=Aksi(skip)
+    // FOOTER_DATA {3: total_jumlah} → total Jumlah tampil di kolom 3 yang tepat
     const FOOTER_DATA_BIAYA = { 3: {{ total_amount_biaya|floatformat:0|default:0 }} };
     const FOOTER_LABEL_BIAYA = 'RINGKASAN ({{ total_transaksi_biaya }} Transaksi Biaya)';
 
+    // toggleColumns via SimkosExport (konsisten dengan semua halaman lain)
     function toggleColumns() { SimkosExport.toggleColumns('#biayaTable'); }
 
     function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => cb.checked = true); toggleColumns(); }
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => cb.checked = false); toggleColumns(); }
 
+    // Export via SimkosExport — format Rp, filter kolom, baris ringkasan di posisi tepat
     function exportToExcel() { SimkosExport.buildExcel('#biayaTable', EXCEL_INFO, FOOTER_DATA_BIAYA, FOOTER_LABEL_BIAYA, 'DAFTAR TRANSAKSI BIAYA', 'Transaksi_Biaya'); }
     function exportToPDF()   { SimkosExport.buildPDF('#biayaTable', PDF_INFO, FOOTER_DATA_BIAYA, FOOTER_LABEL_BIAYA, 'DAFTAR TRANSAKSI BIAYA', 'Transaksi_Biaya'); }
 

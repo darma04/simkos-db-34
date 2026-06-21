@@ -30,8 +30,9 @@
     </div>
     {% endif %}
 
+    <!-- Row 1: Health Score + Key Metrics -->
     <div class="row mb-4">
-        
+        <!-- Health Score Widget -->
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -39,7 +40,7 @@
                         <i class="ri-heart-pulse-line me-1"></i>Skor Kesehatan Bisnis Kost
                     </h6>
                     <div class="position-relative d-inline-block mb-3">
-                        <div id="healthChart" style="width:180px; height:140px;"></div>
+                        <canvas id="healthChart" width="180" height="180"></canvas>
                         <div class="position-absolute top-50 start-50 translate-middle text-center">
                             <h2 class="mb-0 fw-bold" style="color: {{ health_color }};">{{ health_score }}</h2>
                             <small class="text-muted">/ 100</small>
@@ -76,9 +77,10 @@
             </div>
         </div>
 
+        <!-- Key Metrics Cards -->
         <div class="col-lg-8 col-md-6">
             <div class="row">
-                
+                <!-- Pendapatan Sewa Bulan Ini -->
                 <div class="col-6 col-sm-6 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
@@ -101,6 +103,7 @@
                     </div>
                 </div>
 
+                <!-- Profit -->
                 <div class="col-6 col-sm-6 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
@@ -122,6 +125,7 @@
                     </div>
                 </div>
 
+                <!-- Kamar Terisi -->
                 <div class="col-6 col-sm-6 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
@@ -141,6 +145,7 @@
                     </div>
                 </div>
 
+                <!-- Biaya Operasional -->
                 <div class="col-6 col-sm-6 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
@@ -163,38 +168,29 @@
         </div>
     </div>
 
+    <!-- Row 2: Revenue Trend Chart + Room Distribution -->
     <div class="row mb-4">
-        
+        <!-- Revenue Trend Chart -->
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
-                    <h5 class="card-title mb-0 me-2">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0">
                         <i class="ri-bar-chart-box-line me-2"></i>Tren Pendapatan Sewa 6 Bulan
                     </h5>
-                    <div class="dropdown flex-shrink-0">
-                        <button class="btn btn-text-secondary rounded-pill text-muted border-0 p-1" type="button" data-bs-toggle="dropdown">
-                            <i class="ri-more-2-line ri-20px"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="javascript:window.location.reload();">
-                                <i class="ri-loop-left-line me-2"></i>Refresh Data</a>
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="if(window.__revenueTrendChart) window.__revenueTrendChart.exportTo({type:'png'});">
-                                <i class="ri-download-2-line me-2"></i>Unduh Grafik</a>
-                        </div>
-                    </div>
                 </div>
                 <div class="card-body">
                     <div style="position:relative; height:280px;">
-                        <div id="revenueTrendChart" style="min-height: 320px;"></div>
+                        <canvas id="revenueTrendChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Room Distribution -->
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
-                <div class="card-header d-flex flex-nowrap align-items-center justify-content-between">
-                    <h5 class="card-title mb-0 me-2">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
                         <i class="ri-pie-chart-line me-2"></i>Distribusi Kamar
                     </h5>
                 </div>
@@ -205,8 +201,9 @@
         </div>
     </div>
 
+    <!-- Row 3: Anomaly Detection + AI Usage -->
     <div class="row">
-        
+        <!-- Anomali -->
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -238,6 +235,7 @@
             </div>
         </div>
 
+        <!-- AI Usage Stats -->
         <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header">
@@ -293,176 +291,191 @@
     </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var isDark = document.documentElement.classList.contains('dark-style') ||
-                 document.body.classList.contains('dark-style');
+                 document.body.classList.contains('dark-style') ||
+                 window.getComputedStyle(document.body).backgroundColor.includes('rgb(35') ||
+                 window.getComputedStyle(document.body).backgroundColor.includes('rgb(40');
+    var gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    var tickColor = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+    var borderCol = isDark ? 'rgba(255,255,255,0.15)' : '#fff';
 
-    // === HEALTH SCORE CHART (ApexCharts radialBar gauge) ===
-    var healthEl = document.getElementById('healthChart');
-    if (healthEl) {
-        var score = {{ health_score|default:0 }};
-        var healthColor = '{{ health_color|default:"#ff9f43" }}';
-        new ApexCharts(healthEl, {
-            chart: { type: 'radialBar', height: 160, sparkline: { enabled: true } },
-            series: [score],
-            colors: [healthColor],
-            plotOptions: {
-                radialBar: {
-                    startAngle: -135,
-                    endAngle: 135,
-                    hollow: { size: '70%' },
-                    track: { background: isDark ? '#3a3d52' : '#e9ecef', strokeWidth: '100%' },
-                    dataLabels: { show: false }
+    // ═══ HEALTH SCORE GAUGE ═══
+    try {
+        var healthCtx = document.getElementById('healthChart');
+        if (healthCtx) {
+            var score = {{ health_score }};
+            var healthColor = '{{ health_color }}';
+            new Chart(healthCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [score, 100 - score],
+                        backgroundColor: [healthColor, isDark ? 'rgba(255,255,255,0.1)' : '#e9ecef'],
+                        borderWidth: 0,
+                        circumference: 270,
+                        rotation: 225,
+                    }]
+                },
+                options: {
+                    cutout: '78%',
+                    responsive: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
                 }
-            },
-            stroke: { lineCap: 'round' }
-        }).render();
-    }
-
-    // === REVENUE TREND CHART (ApexCharts area - same as Penjualan per Cabang) ===
-    var trendEl = document.getElementById('revenueTrendChart');
-    if (trendEl) {
-        var labels = {{ monthly_labels|safe }};
-        var values = {{ monthly_values|safe }};
-
-        // Approach B: Always render chart, use zero-filled data when empty
-        if (!labels || !Array.isArray(labels) || labels.length === 0) {
-            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+            });
         }
-        if (!values || !Array.isArray(values) || values.length === 0) {
-            values = Array(labels.length).fill(0);
-        }
+    } catch(e) { console.warn('Health chart error:', e); }
 
-        var chartColors = ['#7367f0'];
-        var trendChart = new ApexCharts(trendEl, {
-            chart: {
-                type: 'area',
-                height: 320,
-                fontFamily: 'Inter, -apple-system, sans-serif',
-                background: 'transparent',
-                toolbar: { show: false },
-                animations: { enabled: true, easing: 'easeinout', speed: 800 },
-                dropShadow: { enabled: true, top: 6, left: 0, blur: 6, opacity: isDark ? 0.15 : 0.08, color: chartColors }
-            },
-            colors: chartColors,
-            dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
-            fill: {
-                type: 'gradient',
-                gradient: { shade: isDark ? 'dark' : 'light', type: 'vertical', shadeIntensity: 0.3, opacityFrom: 0.4, opacityTo: 0.02, stops: [0, 95, 100] }
-            },
-            series: [{ name: 'Revenue', data: values }],
-            xaxis: {
-                categories: labels,
-                labels: { style: { colors: isDark ? '#b4b5ba' : '#a5a3ae', fontSize: '12px' } },
-                axisBorder: { show: false },
-                axisTicks: { show: false }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function(val) {
-                        if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1) + 'Jt';
-                        if (val >= 1000) return 'Rp ' + (val / 1000).toFixed(0) + 'rb';
-                        return 'Rp ' + val;
+    // ═══ REVENUE TREND CHART ═══
+    try {
+        var trendEl = document.getElementById('revenueTrendChart');
+        if (trendEl) {
+            var labels = {{ monthly_labels|safe }};
+            var values = {{ monthly_values|safe }};
+
+            new Chart(trendEl.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pendapatan Sewa (Rp)',
+                        data: values,
+                        backgroundColor: 'rgba(102, 108, 255, 0.75)',
+                        borderColor: '#666cff',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barPercentage: 0.55,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return 'Rp ' + ctx.parsed.y.toLocaleString('id-ID');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: tickColor,
+                                callback: function(val) {
+                                    if (val >= 1000000) return 'Rp ' + (val / 1000000).toFixed(1) + 'jt';
+                                    if (val >= 1000) return 'Rp ' + (val / 1000).toFixed(0) + 'rb';
+                                    return 'Rp ' + val;
+                                }
+                            },
+                            grid: { color: gridColor }
+                        },
+                        x: {
+                            ticks: { color: tickColor },
+                            grid: { display: false }
+                        }
                     }
                 }
-            },
-            grid: { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', strokeDashArray: 4, padding: { left: 0, right: 0 } },
-            tooltip: {
-                theme: isDark ? 'dark' : 'light',
-                shared: true,
-                y: { formatter: function(val) { return 'Rp ' + val.toLocaleString('id-ID'); } }
-            }
-        });
-        trendChart.render();
-        window.__revenueTrendChart = trendChart;
-    }
+            });
+        }
+    } catch(e) { console.warn('Revenue chart error:', e); }
 
-    // === AI ROOM DONUT CHART (ApexCharts donut - secondary) ===
-    var aiRoomEl = document.getElementById('aiRoomDonutChart');
-    if (aiRoomEl) {
-        var aiRoomTerisi = {{ kamar_terisi|default:0 }};
-        var aiRoomTersedia = {{ total_kamar|default:0 }} - aiRoomTerisi;
-        var aiRoomTotal = aiRoomTerisi + aiRoomTersedia;
+    // ═══ ROOM DISTRIBUTION CHART (ApexCharts Semi-Donut = Status Tagihan Style) ═══
+    try {
+        var roomDonutEl = document.querySelector('#aiRoomDonutChart');
+        if (roomDonutEl) {
+            var kamarTerisi = {{ kamar_terisi }};
+            var kamarTersedia = {{ kamar_tersedia }};
+            var kamarMaintenance = {{ kamar_maintenance }};
+            var totalKamar = kamarTerisi + kamarTersedia + kamarMaintenance;
+            var labelColor = isDark ? 'rgba(255,255,255,0.6)' : '#6e6b7b';
 
-        var aiRoomSeries = aiRoomTotal > 0 ? [aiRoomTerisi, aiRoomTersedia] : [1];
-        var aiRoomLabels = aiRoomTotal > 0 ? ['Terisi', 'Tersedia'] : ['Belum Ada Data'];
-        var aiRoomColors = aiRoomTotal > 0 ? ['#7367f0', '#28c76f'] : ['#e9ecef'];
-
-        var aiRoomChart = new ApexCharts(aiRoomEl, {
-            series: aiRoomSeries,
-            chart: {
-                type: 'donut',
-                height: 280,
-                fontFamily: '"Inter", sans-serif',
-                parentHeightOffset: 0,
-                toolbar: { show: false }
-            },
-            labels: aiRoomLabels,
-            colors: aiRoomColors,
-            plotOptions: {
-                pie: {
-                    endAngle: 130,
-                    startAngle: -130,
-                    customScale: 0.9,
-                    donut: {
-                        size: '83%',
-                        labels: {
-                            show: true,
-                            name: {
-                                offsetY: 25,
-                                fontSize: '0.9375rem',
-                                fontFamily: 'Inter',
-                                color: isDark ? 'rgba(255,255,255,0.6)' : '#6e6b7b'
-                            },
-                            value: {
-                                offsetY: -15,
-                                fontWeight: 500,
-                                fontSize: '1.75rem',
-                                fontFamily: 'Inter',
-                                color: isDark ? '#d0d2d6' : '#5e5873',
-                                formatter: function(val) { return val; }
-                            },
-                            total: {
+            var roomDonutOptions = {
+                series: totalKamar > 0 ? [kamarTerisi, kamarTersedia, kamarMaintenance] : [1],
+                chart: {
+                    type: 'donut',
+                    height: 280,
+                    fontFamily: '"Inter", sans-serif',
+                    parentHeightOffset: 0
+                },
+                labels: ['Terisi', 'Tersedia', 'Maintenance'],
+                colors: ['#28a745', '#2196f3', '#ff9800'],
+                plotOptions: {
+                    pie: {
+                        endAngle: 130,
+                        startAngle: -130,
+                        customScale: 0.9,
+                        donut: {
+                            size: '83%',
+                            labels: {
                                 show: true,
-                                label: 'Total Kamar',
-                                fontSize: '0.9375rem',
-                                fontFamily: 'Inter',
-                                color: isDark ? 'rgba(255,255,255,0.6)' : '#6e6b7b',
-                                formatter: function(w) {
-                                    return aiRoomTotal > 0 ? aiRoomTotal : 0;
+                                name: {
+                                    offsetY: 25,
+                                    fontSize: '0.9375rem',
+                                    fontFamily: 'Inter',
+                                    color: labelColor
+                                },
+                                value: {
+                                    offsetY: -15,
+                                    fontWeight: 500,
+                                    fontSize: '1.75rem',
+                                    fontFamily: 'Inter',
+                                    color: isDark ? '#d0d2d6' : '#5e5873',
+                                    formatter: function(val) { return val; }
+                                },
+                                total: {
+                                    show: true,
+                                    label: 'Total Kamar',
+                                    fontSize: '0.9375rem',
+                                    fontFamily: 'Inter',
+                                    color: labelColor,
+                                    formatter: function(w) {
+                                        return w.globals.seriesTotals.reduce(function(a, b) { return a + b; }, 0);
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            },
-            tooltip: { enabled: aiRoomTotal > 0 },
-            dataLabels: { enabled: false },
-            stroke: {
-                width: 3,
-                lineCap: 'round',
-                colors: [isDark ? '#283046' : '#fff']
-            },
-            states: {
-                hover: { filter: { type: 'none' } },
-                active: { filter: { type: 'none' } }
-            },
-            legend: {
-                position: 'bottom',
-                fontFamily: 'Inter',
-                fontSize: '15px',
-                markers: { offsetX: -3, height: 10, width: 10 },
-                itemMargin: { horizontal: 24, vertical: 8 },
-                offsetY: -10,
-                labels: { colors: isDark ? 'rgba(255,255,255,0.6)' : '#6e6b7b' }
-            },
-            responsive: [{ breakpoint: 480, options: { chart: { height: 240 } } }]
-        });
-        aiRoomChart.render();
-        window.__aiRoomDonutChart = aiRoomChart;
-    }
+                },
+                tooltip: { enabled: false },
+                dataLabels: { enabled: false },
+                stroke: {
+                    width: 3,
+                    lineCap: 'round',
+                    colors: [isDark ? '#283046' : '#fff']
+                },
+                states: {
+                    hover: { filter: { type: 'none' } },
+                    active: { filter: { type: 'none' } }
+                },
+                legend: {
+                    position: 'bottom',
+                    fontFamily: 'Inter',
+                    fontSize: '15px',
+                    markers: { offsetX: -3, height: 10, width: 10 },
+                    itemMargin: { horizontal: 24, vertical: 8 },
+                    offsetY: -10,
+                    labels: { colors: labelColor }
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: { chart: { height: 240 } }
+                }]
+            };
+            new ApexCharts(roomDonutEl, roomDonutOptions).render();
+        }
+    } catch(e) { console.warn('Room donut chart error:', e); }
 });
 </script>
 {% endblock content %}

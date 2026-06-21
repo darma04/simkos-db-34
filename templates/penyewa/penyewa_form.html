@@ -14,6 +14,8 @@
         <span class="text-muted fw-light">Penyewa /</span> {{ title|default:"Tambah Penyewa" }}
     </h4>
 
+    
+    <!-- UI Gating: Read-Only Alert -->
     {% if is_edit and not can_edit.penyewa %}
     <div class="alert alert-warning alert-dismissible mb-4 mt-3" role="alert">
         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -39,7 +41,6 @@
             <div class="card mb-4">
                 <h5 class="card-header">Formulir Data Penyewa</h5>
                 <div class="card-body">
-                    
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
@@ -60,6 +61,7 @@
                         </div>
                         {% endif %}
 
+                        <!-- Data Diri -->
                         <h6 class="mb-3 text-primary"><i class="ri-user-line me-1"></i>Data Diri</h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -119,6 +121,7 @@
                             </div>
                         </div>
 
+                        <!-- Dokumen -->
                         <h6 class="mb-3 mt-4 text-primary"><i class="ri-file-line me-1"></i>Dokumen</h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -137,6 +140,7 @@
                             </div>
                         </div>
 
+                        <!-- Kontak Darurat -->
                         <h6 class="mb-3 mt-4 text-primary"><i class="ri-phone-line me-1"></i>Kontak Darurat</h6>
                         <div class="row">
                             <div class="col-md-4 mb-3">

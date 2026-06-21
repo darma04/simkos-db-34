@@ -41,6 +41,7 @@
 
 </div>
 
+<!-- Filter Card -->
 <div class="card mb-4">
     <div class="card-body">
         <div class="row g-3">
@@ -66,7 +67,7 @@
                 </select>
             </div>
         </div>
-        
+        <!-- Baris kedua: Pilih Kolom (kiri) dan Tombol Filter (kanan) -->
         <div class="row g-3 mt-2 align-items-end">
             <div class="col-md-3">
                 <label class="form-label">Pilih Kolom</label>
@@ -233,11 +234,27 @@
                 </tr>
                 {% endfor %}
             </tbody>
+            <tfoot class="table-footer-summary">
+                <tr>
+                    <td colspan="4" class="text-start ps-4 py-3" style="vertical-align: middle;">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <i class="ri-calculator-line me-2 text-primary" style="font-size: 1.5rem;"></i>
+                            <div class="text-start">
+                                <strong class="d-block" style="font-size: 1rem;">RINGKASAN</strong>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ total_users }} User
+                                    Terdaftar</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td colspan="3" class="py-3"></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -335,6 +352,7 @@
         letter-spacing: 0
     }
 
+    /* Mobile Horizontal Scroll */
     @media (max-width: 768px) {
         .card-datatable {
             overflow-x: hidden !important;
@@ -356,7 +374,8 @@
 </style>
 <script>
     $(document).ready(function () {
-        
+        // Inisialisasi DataTable — selalu aktif tanpa guard
+        {% if user_list %}
         $('#userTable').DataTable({
             language: { "sEmptyTable": "Tidak ada data", "sProcessing": "Sedang memproses...", "sLengthMenu": "Tampilkan _MENU_ data", "sZeroRecords": "Tidak ditemukan data yang sesuai", "sInfo": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data", "sInfoEmpty": "Menampilkan 0 sampai 0 dari 0 data", "sInfoFiltered": "(disaring dari _MAX_ total data)", "sSearch": "Cari:", "oPaginate": { "sFirst": "Pertama", "sPrevious": "Sebelumnya", "sNext": "Selanjutnya", "sLast": "Terakhir" } },
             order: [[0, 'asc']],
@@ -364,11 +383,15 @@
             lengthMenu: [[10, 25, 50, 75, 100, -1], ['10', '25', '50', '75', '100', 'Semua']],
             responsive: false,
             columnDefs: [{ orderable: false, targets: [6] }],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>><"table-responsive"rt><"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             initComplete: function () { $('.dataTables_filter input').attr('placeholder', 'Cari user...') }
         });
+        {% endif %}
     });
 
+
+
+    // ── Konfigurasi Export ──
     const EXCEL_INFO_USR = {
         name: "{{ export_excel_template.header_nama_perusahaan|escapejs|default:'SIMKOS' }}",
         address: "{{ export_excel_template.header_alamat|escapejs|default:'-' }}",
@@ -383,14 +406,16 @@
         email: "{{ export_pdf_template.header_email|escapejs|default:'-' }}",
         copyright: "{{ export_pdf_template.footer_copyright|escapejs|default:'\u00a9 2026 SIMKOS' }}"
     };
-    
+    // Tidak ada kolom nominal, FOOTER_DATA = {}
     const FOOTER_DATA_USR  = {};
     const FOOTER_LABEL_USR = 'RINGKASAN ({{ total_users }} User | Aktif: {{ active_users|default:0 }})';
 
+    // toggleColumns via SimkosExport
     function toggleColumns() { SimkosExport.toggleColumns('#userTable'); }
     function selectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => cb.checked = true); toggleColumns(); }
     function deselectAllColumns() { document.querySelectorAll('.column-checkbox').forEach(cb => cb.checked = false); toggleColumns(); }
 
+    // Export via SimkosExport
     function exportToExcel() { SimkosExport.buildExcel('#userTable', EXCEL_INFO_USR, FOOTER_DATA_USR, FOOTER_LABEL_USR, 'DAFTAR PENGGUNA SISTEM', 'Daftar_User'); }
     function exportToPDF()   { SimkosExport.buildPDF('#userTable', PDF_INFO_USR, FOOTER_DATA_USR, FOOTER_LABEL_USR, 'DAFTAR PENGGUNA SISTEM', 'Daftar_User'); }
 
@@ -400,6 +425,7 @@
         }
     }
 
+    // Fungsi Modal Hapus User
     let userToDelete = null;
 
     function confirmDeleteUser(userId, username) {
@@ -416,6 +442,7 @@
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menghapus...';
 
+        // Ambil CSRF token (dari cookie karena tidak ada form di halaman)
         function getCsrfToken() {
             const input = document.querySelector('[name=csrfmiddlewaretoken]');
             if (input) return input.value;
@@ -443,12 +470,14 @@
                 throw new Error('Gagal menghapus user');
             })
             .then(() => {
-                
+                // Tutup modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteUserModal'));
                 modal.hide();
 
+                // Tampilkan pesan sukses
                 showToast('success', 'User berhasil dihapus');
 
+                // Reload page after short delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 500);
@@ -462,7 +491,7 @@
     }
 
     function showToast(type, message) {
-        
+        // Buat elemen toast
         const toastHtml = `
         <div class="bs-toast toast toast-placement-ex m-2 bg-${type} top-0 end-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
@@ -474,14 +503,17 @@
         </div>
     `;
 
+        // Tambahkan ke body
         const toastContainer = document.createElement('div');
         toastContainer.innerHTML = toastHtml;
         document.body.appendChild(toastContainer);
 
+        // Tampilkan toast
         const toastElement = toastContainer.querySelector('.toast');
         const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
         toast.show();
 
+        // Hapus setelah tersembunyi
         toastElement.addEventListener('hidden.bs.toast', () => {
             toastContainer.remove();
         });

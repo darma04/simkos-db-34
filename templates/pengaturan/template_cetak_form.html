@@ -29,7 +29,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    
+                    <!-- UI Gating: Read-Only Alert -->
                     {% if not can_edit.pengaturan.template_cetak %}
                     <div class="alert alert-warning alert-dismissible mb-4" role="alert">
                         <h6 class="alert-heading d-flex align-items-center mb-1"><i class="ri-alert-line me-2"></i>Mode Cuma-baca (Read-Only)</h6>
@@ -38,10 +38,10 @@
                     </div>
                     {% endif %}
 
-                    
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
+                        <!-- Informasi Template -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="card-title">Informasi Template</h5>
@@ -63,6 +63,7 @@
                             </div>
                         </div>
 
+                        <!-- Header Perusahaan -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="card-title">Header Perusahaan</h5>
@@ -90,6 +91,7 @@
                             </div>
                         </div>
 
+                        <!-- Footer -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="card-title">Footer</h5>
@@ -112,6 +114,7 @@
                             </div>
                         </div>
 
+                        <!-- Tanda Tangan -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="card-title">Label Tanda Tangan</h5>
@@ -129,6 +132,7 @@
                             </div>
                         </div>
 
+                        <!-- Pengaturan Tampilan -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5 class="card-title">Pengaturan Tampilan</h5>
@@ -160,6 +164,7 @@
                             </div>
                         </div>
 
+                        <!-- Buttons -->
                         <div class="mt-4">
                             {% if can_edit.pengaturan.template_cetak %}
                             <button type="submit" class="btn btn-primary me-2">
@@ -188,6 +193,7 @@
     }
 </style>
 
+    <!-- Auto-Injected UI Disabler Script -->
     {% if not can_edit.pengaturan.template_cetak %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -214,7 +220,7 @@
 
 {% block page_js %}
 <script>
-    
+    // Tambah class form-control ke field form Django
     document.querySelectorAll('input[type="text"], input[type="email"], textarea, select').forEach(el => {
         el.classList.add('form-control');
         {% if not can_edit.pengaturan.template_cetak %}
