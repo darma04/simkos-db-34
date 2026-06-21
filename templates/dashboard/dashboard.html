@@ -240,6 +240,9 @@
                 <div class="table-responsive">
                     {% if tagihan_terbaru %}
 
+                    {% if tagihan_terbaru %}
+
+
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -250,7 +253,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for t in tagihan_terbaru %}
+                    {% for t in tagihan_terbaru %}
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -275,6 +278,54 @@
                     {% endfor %}
                         </tbody>
                     </table>
+
+
+                    {% else %}
+
+
+                    <div class="card-body">
+
+
+                        <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+
+                            <div class="mb-4">
+
+
+                                <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+
+                                     style="width: 88px; height: 88px;">
+
+
+                                    <i class="ri-dashboard-line" style="font-size: 2.8rem;"></i>
+
+
+                                </div>
+
+
+                            </div>
+
+
+                            <h5 class="mb-3">Belum Ada Data</h5>
+
+
+                            <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+
+                                Daftar data masih kosong.
+
+
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
+
+                    {% endif %}
 
                     {% else %}
 
@@ -353,15 +404,8 @@
                                 <td>{{ b.tanggal_bayar|date:"d M Y" }}</td>
                                 <td><span class="badge bg-label-info rounded-pill">{{ b.nama_metode_bayar }}</span></td>
                             </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">
-                                    <i class="ri-inbox-line ri-2x d-block mb-2"></i>
-                                    Belum ada pembayaran tercatat
-                                </td>
-                            </tr>
                             {% endfor %}
-                        </tbody>
+                </tbody>
                     </table>
                 </div>
             </div>

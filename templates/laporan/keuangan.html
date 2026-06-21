@@ -169,7 +169,8 @@
                 <button class="btn btn-label-danger btn-sm" onclick="exportTablePDF('tblPemasukan','RINCIAN PEMASUKAN',{4:{{ total_pemasukan|floatformat:0|default:0 }}},'RINGKASAN ({{ total_trx_masuk }} Transaksi)')"><i class="ri-file-pdf-line me-1"></i>PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+                {% if pemasukan_list %}
+<div class="card-datatable table-responsive">
             <table class="table table-hover" id="tblPemasukan">
                 <thead><tr><th>Tanggal</th><th>No. Pembayaran</th><th>Penyewa</th><th>Metode</th><th class="text-end">Jumlah</th></tr></thead>
                 <tbody>
@@ -191,6 +192,23 @@
                 </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Keuangan</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar keuangan masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
     {% endif %}
 
@@ -206,7 +224,8 @@
                 <button class="btn btn-label-danger btn-sm" onclick="exportTablePDF('tblPengeluaran','RINCIAN PENGELUARAN',{3:{{ total_pengeluaran|floatformat:0|default:0 }}},'RINGKASAN ({{ total_trx_keluar }} Transaksi)')"><i class="ri-file-pdf-line me-1"></i>PDF</button>
             </div>
         </div>
-        <div class="card-datatable table-responsive">
+                {% if pengeluaran_list %}
+<div class="card-datatable table-responsive">
             <table class="table table-hover" id="tblPengeluaran">
                 <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th class="text-end">Jumlah</th></tr></thead>
                 <tbody>
@@ -227,6 +246,23 @@
                 </tfoot>
             </table>
         </div>
+        {% else %}
+        <div class="card-body">
+            <div class="text-center py-4 py-md-5 px-3 px-md-4">
+                <div class="mb-4">
+                    <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+                         style="width: 88px; height: 88px;">
+                        <i class="ri-inbox-line" style="font-size: 2.8rem;"></i>
+                    </div>
+                </div>
+                <h5 class="mb-3">Belum Ada Data Keuangan</h5>
+                <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+                    Daftar keuangan masih kosong.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
     {% endif %}
 </div>
