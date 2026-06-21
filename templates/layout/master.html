@@ -372,8 +372,7 @@
           var pdfDoc = pdfMake.createPdf(docDef);
           if (_isWebView()) {
             pdfDoc.getBlob(function(blob) { _downloadBlob(blob, filename + '.pdf'); });
-          } else {
-            pdfDoc.download(filename + '.pdf');
+          } el      pdfDoc.download(filename + '.pdf');
           }
         } catch (error) { alert('Terjadi kesalahan saat export PDF: ' + error.message); }
       }
