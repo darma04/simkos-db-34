@@ -191,7 +191,7 @@
                 <button class="btn btn-label-danger" onclick="exportPDF()"><i class="ri-file-pdf-line me-1"></i>Export PDF</button>
             </div>
         </div>
-        <div class="card-datatable">
+        <div class="card-datatable table-responsive">
             <table class="table table-hover" id="dataTable">
                 <thead><tr><th>Properti</th><th>Tipe</th><th>Total Kamar</th><th>Terisi</th><th>Tersedia</th><th>Tingkat Hunian</th></tr></thead>
                 <tbody>
@@ -221,7 +221,6 @@
 var dataTable;
 $(document).ready(function(){
     dataTable = $('#dataTable').DataTable({
-            scrollX: true,
         language:{sSearch:"Cari:",sLengthMenu:"Tampilkan _MENU_ data",sInfo:"Menampilkan _START_ sampai _END_ dari _TOTAL_ data",sInfoEmpty:"Menampilkan 0 sampai 0 dari 0 data",sZeroRecords:"Tidak ditemukan",oPaginate:{sNext:"Selanjutnya",sPrevious:"Sebelumnya"}},
         pageLength:25,ordering:true,responsive:false,
         dom:'<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>'
