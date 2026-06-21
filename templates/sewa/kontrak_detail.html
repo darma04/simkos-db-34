@@ -30,12 +30,46 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
+                            {% if tagihan_list %}
+
                             <table class="table table-borderless mb-0">
                                 <tr><td class="text-muted" style="width:130px;">No. Kontrak</td><td><strong>{{ kontrak.nomor_kontrak }}</strong></td></tr>
                                 <tr><td class="text-muted">Penyewa</td><td><a href="{% url 'penyewa:detail' kontrak.penyewa.pk %}" class="text-primary">{{ kontrak.penyewa.nama }}</a></td></tr>
                                 <tr><td class="text-muted">Kamar</td><td><span class="badge bg-label-info rounded-pill">{{ kontrak.kamar }}</span></td></tr>
                                 <tr><td class="text-muted">Status</td><td>{% if kontrak.status == 'aktif' %}<span class="badge bg-label-success rounded-pill">Aktif</span>{% elif kontrak.status == 'selesai' %}<span class="badge bg-label-secondary rounded-pill">Selesai</span>{% else %}<span class="badge bg-label-danger rounded-pill">Dibatalkan</span>{% endif %}</td></tr>
                             </table>
+
+                            {% else %}
+
+                            <div class="card-body">
+
+                                <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                                    <div class="mb-4">
+
+                                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                             style="width: 88px; height: 88px;">
+
+                                            <i class="ri-file-lock-line" style="font-size: 2.8rem;"></i>
+
+                                        </div>
+
+                                    </div>
+
+                                    <h5 class="mb-3">Belum Ada Kontrak</h5>
+
+                                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                        Daftar data masih kosong.
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <table class="table table-borderless mb-0">
@@ -95,8 +129,6 @@
                             {% else %}<span class="badge bg-label-danger rounded-pill">Terlambat</span>{% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="5" class="text-center py-4 text-muted">Belum ada tagihan</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

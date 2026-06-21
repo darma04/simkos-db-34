@@ -110,11 +110,45 @@
                             <h6 class="text-muted mb-2">Alamat Asal</h6>
                             <p class="mb-3">{{ penyewa.alamat_asal|default:"Belum diisi" }}</p>
                             <h6 class="text-muted mb-2">Kontak Darurat</h6>
+                            {% if kontrak_list %}
+
                             <table class="table table-borderless table-sm mb-0">
                                 <tr><td class="text-muted ps-0" style="width:90px;">Nama</td><td>{{ penyewa.kontak_darurat_nama|default:"Kosong" }}</td></tr>
                                 <tr><td class="text-muted ps-0">Telepon</td><td>{{ penyewa.kontak_darurat_telepon|default:"Kosong" }}</td></tr>
                                 <tr><td class="text-muted ps-0">Hubungan</td><td>{{ penyewa.kontak_darurat_hubungan|default:"Kosong" }}</td></tr>
                             </table>
+
+                            {% else %}
+
+                            <div class="card-body">
+
+                                <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                                    <div class="mb-4">
+
+                                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                             style="width: 88px; height: 88px;">
+
+                                            <i class="ri-user-star-line" style="font-size: 2.8rem;"></i>
+
+                                        </div>
+
+                                    </div>
+
+                                    <h5 class="mb-3">Belum Ada Penyewa</h5>
+
+                                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                        Daftar data masih kosong.
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -159,9 +193,7 @@
                                     {% else %}<span class="badge bg-label-danger rounded-pill">Dibatalkan</span>{% endif %}
                                 </td>
                             </tr>
-                            {% empty %}
-                            <tr><td colspan="5" class="text-center py-4 text-muted"><i class="ri-file-list-3-line ri-2x d-block mb-2"></i>Belum ada kontrak</td></tr>
-                            {% endfor %}
+                    {% endfor %}
                         </tbody>
                     </table>
                 </div>

@@ -228,12 +228,46 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
+                            {% if kamar_lantai %}
+
                             <table class="table table-borderless mb-0">
                                 <tr><td class="text-muted" style="width:140px;">Nama</td><td><strong>{{ properti.nama }}</strong></td></tr>
                                 <tr><td class="text-muted">Tipe</td><td><span class="badge bg-label-info rounded-pill">{{ properti.get_tipe_display }}</span></td></tr>
                                 <tr><td class="text-muted">Alamat</td><td>{{ properti.alamat }}</td></tr>
                                 <tr><td class="text-muted">Kota</td><td>{{ properti.kota|default:"-" }}</td></tr>
                             </table>
+
+                            {% else %}
+
+                            <div class="card-body">
+
+                                <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                                    <div class="mb-4">
+
+                                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                             style="width: 88px; height: 88px;">
+
+                                            <i class="ri-home-heart-line" style="font-size: 2.8rem;"></i>
+
+                                        </div>
+
+                                    </div>
+
+                                    <h5 class="mb-3">Belum Ada Properti</h5>
+
+                                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                        Daftar data masih kosong.
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <table class="table table-borderless mb-0">
@@ -421,8 +455,6 @@
                             {% endif %}
                         </td>
                     </tr>
-                    {% empty %}
-                    <tr><td colspan="8" class="text-center py-4 text-muted">Belum ada kamar</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
