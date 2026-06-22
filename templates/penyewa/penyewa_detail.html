@@ -119,7 +119,36 @@
                             </table>
 
                             {% else %}
-{% endif %}
+
+                            <div class="card-body">
+
+                                <div class="text-center py-4 py-md-5 px-3 px-md-4">
+
+                                    <div class="mb-4">
+
+                                        <div class="bg-label-secondary rounded-circle d-inline-flex align-items-center justify-content-center"
+
+                                             style="width: 88px; height: 88px;">
+
+                                            <i class="ri-user-star-line" style="font-size: 2.8rem;"></i>
+
+                                        </div>
+
+                                    </div>
+
+                                    <h5 class="mb-3">Belum Ada Penyewa</h5>
+
+                                    <p class="text-muted mb-5" style="max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+
+                                        Daftar data masih kosong.
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -142,6 +171,9 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="ri-file-list-3-line me-2"></i>Riwayat Kontrak Sewa</h5>
+                    {% if can_create.sewa %}
+                    <a href="{% url 'sewa:kontrak_add' %}" class="btn btn-sm btn-label-primary rounded-pill"><i class="ri-add-line me-1"></i>Buat Kontrak</a>
+                    {% endif %}
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
